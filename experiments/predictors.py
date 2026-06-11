@@ -22,7 +22,7 @@ Gap decomposition per run (separates dropped-count error from interference):
 The dropped part is compared with the Eq. 2 charge E[x^2] per dropped
 feature; the kept residual is what no dropped-importance formula can see.
 
-Strata are PRE-REGISTERED in the config as fixed d/d* bands
+Strata are FIXED IN CONFIG as d/d* bands (declared after v1.0; see README)
 (below: d/d* < 0.8, near: 0.8 <= d/d* <= 1.2, above: d/d* > 1.2).
 
 Reports R^2 and MAE per stratum for each predictor, pooled and per-config

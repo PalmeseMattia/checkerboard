@@ -162,6 +162,8 @@ def aggregate(cfg_ns) -> None:
 
     if len(alphas) >= 2:
         plot_slope_law(fit, cfg_ns.outdir / f"fig8_slope_law_n{cfg_ns.n}.png")
+        plot_norm_hist(runs, alphas,
+                       cfg_ns.outdir / f"fig9_norm_hist_n{cfg_ns.n}.png")
 
 
 def plot_slope_law(fit: dict, path) -> None:
@@ -199,6 +201,36 @@ def plot_slope_law(fit: dict, path) -> None:
     axes[1].legend(fontsize=8)
     fig.suptitle(f"Importance-slope packing law (n={fit['n']}, τ=0.5, "
                  f"α grid {alphas})")
+    save_fig(fig, path)
+
+
+def plot_norm_hist(runs: list, alphas: list, path) -> None:
+    """Fig 9: distribution of ‖W_i‖² per alpha (all slopes & seeds pooled).
+
+    Shows the bimodality that makes the kept-count exponents flat across
+    tau in [0.3, 0.7]: column norms concentrate near 0 (dropped) and near
+    or above 1 (kept), leaving the threshold window nearly empty.
+    """
+    fig, axes = plt.subplots(1, len(alphas), figsize=(3.2 * len(alphas), 3.4),
+                             sharey=True)
+    if len(alphas) == 1:
+        axes = [axes]
+    for ax, a in zip(axes, alphas):
+        run = next(r for r in runs if r["alpha"] == a)
+        norms = np.concatenate(
+            [np.array(rec["col_norms_sq"]) for rec in run["records"]])
+        clipped = np.minimum(norms, 2.0)  # >2 folded into the last bin
+        in_band = float(((norms > 0.3) & (norms < 0.7)).mean())
+        ax.hist(clipped, bins=40, range=(0, 2), color="#0072B2", alpha=0.85)
+        ax.axvspan(0.3, 0.7, color="#D55E00", alpha=0.18,
+                   label=f"τ band [0.3, 0.7]: {in_band:.1%} of mass")
+        ax.set_yscale("log")
+        ax.set_xlabel("‖W_i‖²  (clipped at 2)")
+        ax.set_title(f"α = {a}")
+        ax.legend(fontsize=7)
+    axes[0].set_ylabel("count (log)")
+    fig.suptitle("Column-norm bimodality: why kept counts are τ-stable "
+                 "(all slopes & seeds pooled)")
     save_fig(fig, path)
 
 

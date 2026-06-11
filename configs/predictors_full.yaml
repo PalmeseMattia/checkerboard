@@ -1,6 +1,6 @@
 # Floor-predictor analysis; reads exp0_*.json + probe_slope_law_n<fit_n>_fit.json.
 fit_n: 200
-# PRE-REGISTERED strata: fixed d/d* bands (stated in README and report).
+# Strata: fixed d/d* bands, declared here in config (stated in README and report).
 strata:
   below_max: 0.8   # below:  d/d* < 0.8
   near_max: 1.2    # near:   0.8 <= d/d* <= 1.2 ; above: d/d* > 1.2

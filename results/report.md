@@ -2,9 +2,9 @@
 
 ## Executive summary
 
-**Headline result (audit).** The refined Sarkar–Deka floor formula (Eq. 2) predicts absolute loss floors well *below* the critical width d* but collapses near/above it (R² goes negative; per-config its median R² is negative even pooled-positive). The decisive zero-fitted-parameter test (b′) — Eq. 2 charged on each run's own measured kept set — is the best predictor in every stratum (overall R² = 0.97): Eq. 2's per-feature charging is essentially correct, and the entire failure of (a) is in predicting the kept COUNT. The one-fitted-law equilibrium count (b), F = round(d·ĝ) with ĝ = 1.03·g(α)^0.53, recovers most of (b′)'s accuracy without measuring the kept set.
+**Headline result (audit).** The refined Sarkar–Deka floor formula (Eq. 2) predicts absolute loss floors well *below* the critical width d* but collapses near/above it (R² goes negative; per-config its median R² is negative even pooled-positive). The decisive zero-fitted-parameter test (b′) — Eq. 2 charged on each run's own measured kept set — is the best predictor in every stratum (overall R² = 0.97): Eq. 2's per-feature charging is essentially correct to first order, and the dominant failure of (a) is in predicting the kept COUNT. The one-fitted-law equilibrium count (b), F = round(d·ĝ) with ĝ = 1.03·g(α)^0.53, recovers most of (b′)'s accuracy in the pooled metrics; per-config it is uneven (mean -0.04 / median 0.83), with the negative mean driven by the α=0.99 configs where ±1 feature on tiny floors explodes R².
 
-Absolute-floor R², pre-registered strata (d/d* < 0.8 / 0.8 <= d/d* <= 1.2 / d/d* > 1.2):
+Absolute-floor R², strata fixed in config (d/d* < 0.8 / 0.8 <= d/d* <= 1.2 / d/d* > 1.2):
 
 | stratum | n | (a) Eq. 2 | (b) equilibrium | (b′) measured kept set |
 |---|--:|--:|--:|--:|
@@ -288,7 +288,7 @@ Pearson r (predicted vs achieved): **0.9765**
 
 Predictors of the **absolute** floor on all 600 (config × width × seed) points: (a) original Eq. 2 F=⌊d·g⌋; (b) equilibrium count F=round(d·ĝ), ĝ=1.03·g(α)^0.53 (also with floor() to quantify the rounding convention); **(b′) the zero-fitted-parameter audit** — Eq. 2 charged on each run's own measured kept set S_obs; (c) per-feature Σᵢ Iᵢ·E[xᵢ²]·(1−Cᵢ) with measured Cᵢ.
 
-Strata are pre-registered d/d* bands: below = d/d* < 0.8, near = 0.8 <= d/d* <= 1.2, above = d/d* > 1.2.
+Strata are d/d* bands fixed in config: below = d/d* < 0.8, near = 0.8 <= d/d* <= 1.2, above = d/d* > 1.2. The above-d* stratum has few independent (config, width) cells (~6, at 5 seeds each), so its numbers are indicative rather than load-bearing.
 
 **R² (MAE) on absolute floors** (negative R² = worse than predicting the mean):
 
@@ -301,7 +301,7 @@ Strata are pre-registered d/d* bands: below = d/d* < 0.8, near = 0.8 <= d/d* <= 
 
 Per-config aggregated R² (12 units, mean / median): (a) Eq. 2 -5.43 / -1.17; (b) equilibrium -0.04 / 0.83; (b) w/ floor() 0.08 / 0.84; (b′) measured kept set 0.91 / 0.91; (c) per-feature -4.70 / -4.61.
 
-**Reading.** Pooled, Eq. 2 (a) looks adequate below d* (R² = 0.57) and collapses near/above (R² = -3.76 / -2.03); per-config its median R² is -1.17 — the pooled number is held up by cross-config variance. The one-fitted-law equilibrium count (b) lifts the strata to 0.67 / 0.49; the rounding convention is worth ±0.03–0.07 R² near d* (see the floor() column). The zero-parameter (b′) is the best predictor in every stratum (0.97 overall; per-config mean 0.91): once the kept set is known, Eq. 2's charging is essentially correct — the entire failure of (a) is in predicting the kept COUNT, not the per-feature cost. Predictor (c) overshoots (R² = -0.53): fractional capacity does not map linearly to loss.
+**Reading.** Pooled, Eq. 2 (a) looks adequate below d* (R² = 0.57) and collapses near/above (R² = -3.76 / -2.03); per-config its median R² is -1.17 — the pooled number is held up by cross-config variance. The one-fitted-law equilibrium count (b) lifts the strata to 0.67 / 0.49, but per-config it is uneven (mean -0.04 / median 0.83): the negative mean is driven by the three α=0.99 configs, where floors are tiny and a ±1-feature count error explodes R² — (b′) stays ≥ 0.85 on those same configs. The rounding convention is worth ±0.03–0.07 R² near d* (see the floor() column). The zero-parameter (b′) is the best predictor in every stratum (0.97 overall; per-config mean 0.91): once the kept set is known, Eq. 2's charging is essentially correct — the entire failure of (a) is in predicting the kept COUNT, not the per-feature cost. Predictor (c) overshoots (R² = -0.53): fractional capacity does not map linearly to loss.
 
 ### Gap decomposition — where the loss lives
 
@@ -314,7 +314,7 @@ Per run, achieved floor = Σ_{i∉S} Iᵢ·mseᵢ (dropped importance) + Σ_{i�
 | near | 0.73 | 0.27 | 0.91 |
 | above | 0.72 | 0.28 | 0.94 |
 
-Dropped importance carries most of the floor everywhere; the kept-feature interference residual grows toward d* but stays the minority share. The measured per-dropped-feature cost is ≈0.9× the Eq. 2 charge E[x²] (slightly below 1: a bias-optimal constant recovers Var(x) < E[x²]).
+Dropped importance carries most of the floor everywhere; the kept-feature interference residual grows toward d* but stays the minority share. The measured per-dropped-feature cost is ≈0.9× the Eq. 2 charge E[x²] (slightly below 1: a bias-optimal constant recovers Var(x) < E[x²]). This also makes (b′)'s residual near d* predictable: it overcharges dropped features by ~1/0.9 and omits the ~27% interference share, netting ~20% under-prediction — "charging essentially correct" holds to first order.
 
 ![predicted vs observed](fig7_predicted_vs_observed.png)
 
@@ -444,7 +444,7 @@ At d_S = 6 (mean over seeds; L* = 0.0141):
 
 ### Packing-law exponent b vs survival threshold
 
-Refit ĝ(α) ∝ g(α)^b at norm² thresholds τ and equivalent C_i thresholds. C_i thresholds above 0.5 degenerate (an antipodal pair already has C = 0.5), so the norm² column is robust.
+Refit ĝ(α) ∝ g(α)^b at norm² thresholds τ and at C_i thresholds. **The τ-stability claim is scoped to the norm² operationalization**: column norms are strongly bimodal (piled near 0 and near/above 1, with the τ window nearly empty — see fig9_norm_hist_n200.png), which is *why* the exponents are τ-flat. The C_i columns test a different, coarser operationalization and degenerate above C = 0.5 by construction (an antipodal pair already has C = 0.5); they are kept for transparency, not as support. The operationalization's strongest defense is (b′) itself: the kept set it defines yields the best absolute-floor predictions with zero fitted parameters.
 
 | τ | norm² uniform b | norm² Zipf b | C_i uniform b | C_i Zipf b |
 |--:|----------------:|-------------:|--------------:|----------:|
@@ -454,7 +454,9 @@ Refit ĝ(α) ∝ g(α)^b at norm² thresholds τ and equivalent C_i thresholds. 
 | 0.6 | 0.934 | 0.534 | — | -2.352 |
 | 0.7 | 0.934 | 0.534 | — | -2.352 |
 
-Across τ ∈ [0.3, 0.7] the norm² exponents stay in uniform [0.93, 0.93], Zipf [0.53, 0.53] — the split is threshold-stable.
+Across τ ∈ [0.3, 0.7] the norm² exponents stay in uniform [0.93, 0.93], Zipf [0.53, 0.53] — the split is threshold-stable under the norm² operationalization.
+
+![norm histogram](fig9_norm_hist_n200.png)
 
 ### Capacity scaling vs importance slope ĝ(α, s)
 

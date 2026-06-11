@@ -36,8 +36,8 @@ theorem, in the toy-model regime where those assumptions can be measured
 directly. The refined Eq. 2 floor tracks achieved floors well *below* the
 critical width d* (Pearson r ≈ 0.98 across a 12-config sweep) but
 **systematically underestimates absolute floors near and above d*** —
-exactly the regime their Pythia calibration patches with a constant
-C = 8.97 > 1. The audit localizes the failure precisely: the
+the regime where their affine Pythia calibration (C = 8.97 > 1) absorbs
+the discrepancy. The audit localizes the failure precisely: the
 **zero-fitted-parameter predictor (b′)** — Eq. 2 charged on each run's own
 *measured* kept set — is the best absolute predictor in every stratum
 (R² = 0.97 overall, 0.80 near d*, 0.64 above; per-config mean 0.91), and
@@ -48,8 +48,9 @@ fewer, cleaner features than F = ⌊d·g(α)⌋.
 
 Replacing the kept count with a one-fitted-law equilibrium count,
 **F = round(d·ĝ(α)) with ĝ(α) = 1.03·g(α)^0.53** (seed-bootstrap SE ±0.03 /
-±0.01), recovers most of (b′)'s accuracy without measuring anything: the
-near/above-d* strata go from R² = −3.8 / −2.0 (Eq. 2) to 0.67 / 0.49. The
+±0.01), recovers most of (b′)'s accuracy *in the pooled metrics*: the
+near/above-d* strata go from R² = −3.8 / −2.0 (Eq. 2) to 0.67 / 0.49.
+Per-config it is uneven (mean −0.04 / median 0.83; see Results). The
 packing exponent is importance-slope dependent (b falls from 0.93 ± 0.01
 for uniform importances to 0.34 ± 0.02 at s = 3), so any recalibration of
 their C/d*/B must be slope-specific. Vanilla distillation respects A2's
@@ -117,11 +118,11 @@ Each claim regenerates from a clean clone with the listed command
 | 1 | Eq. 2 floor tracks achieved floors (r > 0.9) but underestimates magnitude | Exp 0 | `fig1_floor_*`, `fig2_survival_*` | `exp0_replication.py --config configs/exp0_full.yaml` |
 | 2 | Eq. 2 R² goes **negative** near/above d*; the zero-parameter (b′) and the equilibrium count (b) restore it — the failure is the kept count, not the charging | predictors | **`fig7_predicted_vs_observed.png`** | `predictors.py --config configs/predictors_full.yaml` |
 | 3 | At d_S=d_T the geometric share of the floor is 0.61–0.96 (mean 0.75) via the measured kept set (b′), 0.40–0.73 (mean 0.63) via the fitted law (b) → baseline B is contaminated | predictors | `fig7` | same as #2 |
-| 4 | g(α) bound is reachable with uniform importances; Zipf equilibrates below it | capacity probe | `fig_probe_capacity_n200.png` | `probe_capacity.py --config configs/probe_capacity_full.yaml` |
+| 4 | g(α) bound is approached under uniform importances (see Limitations for the n-dependent prefactor); Zipf equilibrates below it | capacity probe | `fig_probe_capacity_n200.png` | `probe_capacity.py --config configs/probe_capacity_full.yaml` |
 | 5 | Packing exponent b is threshold-stable and slope-dependent (0.93 → 0.34) | slope-law probe | `fig8_slope_law_n200.png` | `probe_slope_law.py --config configs/probe_slope_law_full.yaml` |
 | 6 | α=0.99 uniform sub-g packing is a real equilibrium, not under-training | convergence | (table in report) | `probe_slope_law.py --config configs/convergence_n400_{1x,3x}.yaml` |
 | 7 | Distillation respects A2 ordering ~ as well as direct, but adds a teacher menu | Exp A | `fig3_overlap_*` | `expA_audit.py --config configs/expA_full.yaml` |
-| 8 | Placement overrides emergent allocation at a theory-predictable cost | Exp B | `fig4_pareto_*`, `fig5_perfeature_*` | `expB_placement.py --config configs/expB_full.yaml` |
+| 8 | Placement overrides emergent allocation at a small absolute cost, ordered as the theory predicts (menu-bound under distillation) | Exp B | `fig4_pareto_*`, `fig5_perfeature_*` | `expB_placement.py --config configs/expB_full.yaml` |
 | 9 | Emergent superposition already exploits anti-correlation (beats iid L*) | Exp C | `fig6_blocked_*` | `expC_correlation.py --config configs/expC_full.yaml` |
 
 The headline figure is **`results/fig7_predicted_vs_observed.png`** (claim 2).
@@ -140,8 +141,14 @@ everywhere, and the gap widens toward d*.
 
 **Floor predictors (the core result).** Absolute-floor R² (MAE in
 parentheses) on 600 points (12 configs × widths × seeds). Strata are
-**pre-registered** d/d* bands fixed in `configs/predictors_full.yaml`:
-below d/d* < 0.8, near 0.8–1.2, above > 1.2.
+**fixed in config** (`configs/predictors_full.yaml`) as d/d* bands:
+below d/d* < 0.8, near 0.8–1.2, above > 1.2. Honesty note: these bands
+were declared after v1.0 (which used ±1 absolute-width bands); re-banding
+moved the fitted-law predictor's near/above R² from 0.70/0.58 to
+0.67/0.49 — i.e. *against* the then-headline predictor — while (b′) is
+insensitive to the choice. The above-d* stratum has n=30 points but only
+**~6 independent (config, width) cells** (5 seeds each), so its
+conclusions are indicative, not load-bearing.
 
 | stratum | n | (a) Eq. 2 | (b) equilibrium, round() | (b) w/ floor() | (b′) measured kept set | (c) per-feature Cᵢ |
 |---|--:|--:|--:|--:|--:|--:|
@@ -151,12 +158,20 @@ below d/d* < 0.8, near 0.8–1.2, above > 1.2.
 | above d* | 30 | **−2.03** (.014) | 0.49 (.006) | 0.56 (.005) | **0.64 (.004)** | −10.24 (.025) |
 
 Per-config aggregated R² (12 units): Eq. 2 mean **−5.4** / median −1.2 (the
-pooled 0.52 is held up by cross-config variance); (b′) mean **0.91** /
-median 0.91. The **zero-fitted-parameter (b′)** — Eq. 2 charged on each
-run's own measured kept set — is the best predictor in every stratum, and
-the gap decomposition shows dropped importance carries 72–87% of the
-achieved floor with the measured per-dropped-feature cost at ≈0.9× the
-Eq. 2 charge. Together: **Eq. 2's charging is right; A2's kept count is
+pooled 0.52 is held up by cross-config variance); **(b) mean −0.04 /
+median 0.83** — the negative mean is driven by the three α=0.99 configs
+(R² = −5.8 / −1.7 / −0.5), where floors are tiny and a ±1-feature count
+error explodes R²; (b′) stays ≥ 0.85 on those same configs and is mean
+**0.91** / median 0.91 overall. So (b) matches (b′) in pooled metrics but
+not per-config; only (b′) is uniformly good. The **zero-fitted-parameter
+(b′)** — Eq. 2 charged on each run's own measured kept set — is the best
+predictor in every stratum, and the gap decomposition shows dropped
+importance carries 72–87% of the achieved floor with the measured
+per-dropped-feature cost at ≈0.9× the Eq. 2 charge. (b′)'s residual near
+d* is itself predictable: it overcharges dropped features by ~1/0.9 and
+omits the ~27% interference share on kept features, netting ~20%
+under-prediction — "charging essentially correct" holds to first order.
+Together: **Eq. 2's charging is right to first order; A2's kept count is
 what fails.** The rounding convention in (b) (floor vs round of d·ĝ) is
 worth ±0.03–0.07 R² near d* — both are reported. The per-feature form (c)
 *overshoots* — a partially represented feature plus an optimal bias recovers
@@ -186,12 +201,20 @@ baseline (16.40), an n-dependence of the prefactor listed in Limitations.
 violate A2's ordering by the same small margin (overlap@k ∈ [0.80, 0.97],
 never 1.0), so distillation is not the culprit. But **teacher containment is
 1.000 at every width** — a distilled student keeps only features its teacher
-represents (the teacher's |S_T| ≈ 22/40 menu).
+represents (the teacher's |S_T| = 22/40 menu). The teacher count is itself
+an out-of-experiment check of the equilibrium law: d_T·ĝ(0.90) = 22.5, and
+all five teachers keep exactly ⌊22.5⌋ = 22 features. One further
+observation, single-config and unreplicated: distilled students keep
+slightly *more* features than direct ones at mid widths (e.g. 14.6 vs 13.6
+at d_S=6), consistent with the teacher output being a *denoised target* —
+features the teacher dropped contribute no target variance, freeing
+capacity — but we flag it as a hypothesis, not a finding.
 
 **Exp B — controlled placement.** Boosting the training weight of a
 low-importance critical set C = ranks {20, 28, 36} by β makes those features
-survive. Under the task-target control, survival reaches 100% (β=10 at
-d_S=3,5; β=3 at d_S=7). The floor cost is **small in absolute terms** —
+survive. Under the task-target control, survival crosses 90% at β=10 for
+d_S=3 (0.93; 100% from β=30) and reaches 100% at β=10 for d_S=5 and at β=3
+for d_S=7. The floor cost is **small in absolute terms** —
 ΔL ≈ 0.002–0.010 importance-weighted MSE at the smallest β reaching ≥90%
 survival — and ordered as the theory predicts (monotone in both β and
 survival). We report it as an absolute cost, not a ratio: the ratio to the
@@ -337,10 +360,17 @@ distillation menu constraint (Exp A) and the placement-cost Pareto (Exp B).
   encoder/decoder, as in Elhage et al. A different head (untied weights,
   layernorm, deeper decoder) could allocate capacity differently.
 - **"Kept" is operationalized by a norm² threshold** (‖Wᵢ‖² > 0.5). This is
-  a choice; we report the threshold-free Σ Cᵢ alongside it and verify the
-  packing-law exponents are stable across τ ∈ [0.3, 0.7] (robustness table
-  in the report and `probe_slope_law` output). Cᵢ thresholds above 0.5
-  degenerate (an antipodal pair already has C = 0.5).
+  a choice; we report the threshold-free Σ Cᵢ alongside it. The τ-stability
+  claim is scoped to **this norm² operationalization**: the exponents are
+  flat across τ ∈ [0.3, 0.7] because the column-norm distribution is
+  strongly bimodal — norms pile up near 0 (dropped) and near/above 1
+  (kept), leaving the threshold window nearly empty (histogram:
+  `results/fig9_norm_hist_n200.png`). The Cᵢ-threshold columns in the
+  robustness table degenerate above C = 0.5 by construction (an antipodal
+  pair already has C = 0.5), so they test a different, coarser
+  operationalization, not the same claim. The operationalization's
+  strongest defense is **(b′) itself**: the kept set it defines yields the
+  best absolute-floor predictions with zero fitted parameters.
 - **Equalization is partial.** `--equalize-active` equalizes per-feature
   gradient counts across α; pairwise co-activation still scales (1−α)² and
   is not equalized, so extreme-α comparisons carry that caveat.

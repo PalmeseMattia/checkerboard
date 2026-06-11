@@ -45,13 +45,17 @@ def section_executive(outdir: Path) -> list[str]:
             "decisive zero-fitted-parameter test (b′) — Eq. 2 charged on each "
             "run's own measured kept set — is the best predictor in every "
             f"stratum (overall R² = {s['overall']['bp']:.2f}): Eq. 2's "
-            "per-feature charging is essentially correct, and the entire "
-            "failure of (a) is in predicting the kept COUNT. The one-fitted-law "
-            f"equilibrium count (b), F = round(d·ĝ) with ĝ = "
-            f"{a:.2f}·g(α)^{b:.2f}, recovers most of (b′)'s accuracy without "
-            "measuring the kept set.",
+            "per-feature charging is essentially correct to first order, and "
+            "the dominant failure of (a) is in predicting the kept COUNT. The "
+            f"one-fitted-law equilibrium count (b), F = round(d·ĝ) with ĝ = "
+            f"{a:.2f}·g(α)^{b:.2f}, recovers most of (b′)'s accuracy in the "
+            "pooled metrics; per-config it is uneven (mean "
+            f"{d['per_config_aggregate']['b']['mean']:.2f} / median "
+            f"{d['per_config_aggregate']['b']['median']:.2f}), with the "
+            "negative mean driven by the α=0.99 configs where ±1 feature on "
+            "tiny floors explodes R².",
             "",
-            f"Absolute-floor R², pre-registered strata ({sd['below']} / "
+            f"Absolute-floor R², strata fixed in config ({sd['below']} / "
             f"{sd['near']} / {sd['above']}):",
             "",
             "| stratum | n | (a) Eq. 2 | (b) equilibrium | (b′) measured kept set |",
@@ -152,8 +156,10 @@ def section_predictors(outdir: Path) -> list[str]:
         "**(b′) the zero-fitted-parameter audit** — Eq. 2 charged on each "
         "run's own measured kept set S_obs; (c) per-feature "
         "Σᵢ Iᵢ·E[xᵢ²]·(1−Cᵢ) with measured Cᵢ.", "",
-        f"Strata are pre-registered d/d* bands: below = {sd['below']}, "
-        f"near = {sd['near']}, above = {sd['above']}.", "",
+        f"Strata are d/d* bands fixed in config: below = {sd['below']}, "
+        f"near = {sd['near']}, above = {sd['above']}. The above-d* stratum "
+        "has few independent (config, width) cells (~6, at 5 seeds each), so "
+        "its numbers are indicative rather than load-bearing.", "",
         "**R² (MAE) on absolute floors** (negative R² = worse than "
         "predicting the mean):", "",
         "| stratum | n | " + " | ".join(labels.values()) + " |",
@@ -176,7 +182,11 @@ def section_predictors(outdir: Path) -> list[str]:
         f"(R² = {s['near']['a']:.2f} / {s['above']['a']:.2f}); per-config its "
         f"median R² is {agg['a']['median']:.2f} — the pooled number is held up "
         "by cross-config variance. The one-fitted-law equilibrium count (b) "
-        f"lifts the strata to {s['near']['b']:.2f} / {s['above']['b']:.2f}; the "
+        f"lifts the strata to {s['near']['b']:.2f} / {s['above']['b']:.2f}, but "
+        f"per-config it is uneven (mean {agg['b']['mean']:.2f} / median "
+        f"{agg['b']['median']:.2f}): the negative mean is driven by the three "
+        "α=0.99 configs, where floors are tiny and a ±1-feature count error "
+        "explodes R² — (b′) stays ≥ 0.85 on those same configs. The "
         f"rounding convention is worth ±0.03–0.07 R² near d* (see the floor() "
         "column). The zero-parameter (b′) is the best predictor in every "
         f"stratum ({s['overall']['bp']:.2f} overall; per-config mean "
@@ -203,7 +213,10 @@ def section_predictors(outdir: Path) -> list[str]:
         "kept-feature interference residual grows toward d* but stays the "
         "minority share. The measured per-dropped-feature cost is ≈0.9× the "
         "Eq. 2 charge E[x²] (slightly below 1: a bias-optimal constant "
-        "recovers Var(x) < E[x²]).",
+        "recovers Var(x) < E[x²]). This also makes (b′)'s residual near d* "
+        "predictable: it overcharges dropped features by ~1/0.9 and omits "
+        "the ~27% interference share, netting ~20% under-prediction — "
+        "\"charging essentially correct\" holds to first order.",
         "", "![predicted vs observed](fig7_predicted_vs_observed.png)", "",
         "### d_S = d_T geometric/residual split", "",
         "Their Pythia baseline B is read at d_S = d_T assuming the geometric "
@@ -379,9 +392,18 @@ def section_slope_law(outdir: Path) -> list[str]:
         d = sl["width"]
         lines += [f"## Importance-slope & threshold robustness (n={sl['n']}, d={d})", "",
                   "### Packing-law exponent b vs survival threshold", "",
-                  "Refit ĝ(α) ∝ g(α)^b at norm² thresholds τ and equivalent C_i "
-                  "thresholds. C_i thresholds above 0.5 degenerate (an antipodal "
-                  "pair already has C = 0.5), so the norm² column is robust.", "",
+                  "Refit ĝ(α) ∝ g(α)^b at norm² thresholds τ and at C_i "
+                  "thresholds. **The τ-stability claim is scoped to the norm² "
+                  "operationalization**: column norms are strongly bimodal "
+                  "(piled near 0 and near/above 1, with the τ window nearly "
+                  f"empty — see fig9_norm_hist_n{sl['n']}.png), which is *why* "
+                  "the exponents are τ-flat. The C_i columns test a different, "
+                  "coarser operationalization and degenerate above C = 0.5 by "
+                  "construction (an antipodal pair already has C = 0.5); they "
+                  "are kept for transparency, not as support. The "
+                  "operationalization's strongest defense is (b′) itself: the "
+                  "kept set it defines yields the best absolute-floor "
+                  "predictions with zero fitted parameters.", "",
                   "| τ | norm² uniform b | norm² Zipf b | C_i uniform b | C_i Zipf b |",
                   "|--:|----------------:|-------------:|--------------:|----------:|"]
         tr = sl["threshold_robustness"]
@@ -401,7 +423,9 @@ def section_slope_law(outdir: Path) -> list[str]:
         zb = [x for x in zb if x is not None and np.isfinite(x)]
         lines += ["", f"Across τ ∈ [0.3, 0.7] the norm² exponents stay in uniform "
                   f"[{min(nb):.2f}, {max(nb):.2f}], Zipf [{min(zb):.2f}, {max(zb):.2f}] "
-                  "— the split is threshold-stable.", "",
+                  "— the split is threshold-stable under the norm² "
+                  "operationalization.", "",
+                  f"![norm histogram](fig9_norm_hist_n{sl['n']}.png)", "",
                   "### Capacity scaling vs importance slope ĝ(α, s)", "",
                   "Fit ĝ(α) = a·g(α)^b at τ=0.5 for I ∝ i^(−s); ± values are "
                   "seed-bootstrap standard errors (B=1000):", "",
