@@ -1,5 +1,7 @@
 # Controlled Feature Placement in Distillation
 
+[![DOI](https://zenodo.org/badge/1265708873.svg)](https://doi.org/10.5281/zenodo.20640978)
+
 A small, fully reproducible PyTorch testbed that audits the capacity
 allocation of **superposition** and the minimum-width loss-floor theorem of
 **Sarkar & Deka 2026** (*Geometric Limits of Knowledge Distillation*,
@@ -343,4 +345,5 @@ command that produces it.
 ## License & citation
 
 MIT (see [`LICENSE`](LICENSE)). If you use this software or its findings,
-please cite via [`CITATION.cff`](CITATION.cff).
+please cite via [`CITATION.cff`](CITATION.cff) or the archived release —
+DOI [10.5281/zenodo.20640978](https://doi.org/10.5281/zenodo.20640978).

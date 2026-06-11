@@ -6,6 +6,9 @@ message: >-
   If you use this software or its findings, please cite it
   using the metadata below.
 type: software
+doi: 10.5281/zenodo.20640978
+repository-code: https://github.com/PalmeseMattia/checkerboard
+url: https://github.com/PalmeseMattia/checkerboard
 authors:
   - given-names: Davide Mattia
     family-names: Palmese
@@ -24,6 +27,7 @@ keywords:
   - toy models
   - capacity
 license: MIT
+version: 1.0.0
 date-released: "2026-06-11"
 references:
   - type: article
