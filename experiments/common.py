@@ -25,6 +25,9 @@ def load_config(default_yaml: str, description: str) -> SimpleNamespace:
                         help="YAML config (see configs/)")
     parser.add_argument("--device", default=None, help="override device (auto/cpu/cuda)")
     parser.add_argument("--outdir", default=None, help="override output directory")
+    parser.add_argument("--aggregate-only", action="store_true",
+                        help="skip training; re-aggregate existing JSONs "
+                             "(probes only)")
     args = parser.parse_args()
 
     cfg = yaml.safe_load(Path(args.config).read_text())
@@ -34,6 +37,7 @@ def load_config(default_yaml: str, description: str) -> SimpleNamespace:
         cfg["outdir"] = args.outdir
     cfg.setdefault("device", "auto")
     cfg.setdefault("outdir", "results")
+    cfg["aggregate_only"] = args.aggregate_only
     ns = SimpleNamespace(**cfg)
     ns.outdir = Path(ns.outdir)
     ns.outdir.mkdir(parents=True, exist_ok=True)

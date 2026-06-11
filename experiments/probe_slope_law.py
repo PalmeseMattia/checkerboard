@@ -112,12 +112,39 @@ def aggregate(cfg_ns) -> None:
                 row[name] = fit_packing_law(g, mean_survived(slope, by, thr) / d)
             thr_table[by][f"{thr:.1f}"] = row
 
-    # Canonical fit ghat(alpha, s) at the survival threshold (norm² > 0.5).
+    # Canonical fit ghat(alpha, s) at the survival threshold (norm² > 0.5),
+    # with seed-bootstrap standard errors on the prefactor and exponent
+    # (resample seeds with replacement per alpha, refit; B=1000, fixed RNG).
+    def per_seed_counts(slope: float) -> dict[float, np.ndarray]:
+        out = {}
+        for a in alphas:
+            run = next(r for r in runs if r["alpha"] == a)
+            out[a] = np.array(
+                [int((np.array(rec["col_norms_sq"]) > SURVIVAL_THRESHOLD).sum())
+                 for rec in run["records"] if rec["slope"] == slope], dtype=float)
+        return out
+
+    rng = np.random.default_rng(0)
+    B = 1000
     slope_fit, surv_by_slope = {}, {}
     for slope in cfg_ns.slopes:
-        counts = mean_survived(slope, "norm", SURVIVAL_THRESHOLD)
+        counts_by_alpha = per_seed_counts(slope)
+        counts = np.array([counts_by_alpha[a].mean() for a in alphas])
         surv_by_slope[f"{slope}"] = counts.tolist()
-        slope_fit[f"{slope}"] = fit_packing_law(g, counts / d)
+        fit = fit_packing_law(g, counts / d)
+        boot_a, boot_b = [], []
+        if len(alphas) >= 2:
+            for _ in range(B):
+                ghat = np.array([
+                    rng.choice(c, size=len(c), replace=True).mean()
+                    for c in (counts_by_alpha[a] for a in alphas)
+                ]) / d
+                bf = fit_packing_law(g, ghat)
+                boot_a.append(bf["a"])
+                boot_b.append(bf["b"])
+        fit["a_se"] = float(np.nanstd(boot_a)) if boot_a else float("nan")
+        fit["b_se"] = float(np.nanstd(boot_b)) if boot_b else float("nan")
+        slope_fit[f"{slope}"] = fit
 
     fit = {"n": cfg_ns.n, "width": d, "alphas": alphas, "g": g.tolist(),
            "slopes": list(cfg_ns.slopes),
@@ -126,10 +153,12 @@ def aggregate(cfg_ns) -> None:
            "survived_by_slope_tau0.5": surv_by_slope}
     dump_json(cfg_ns.outdir / f"probe_slope_law_n{cfg_ns.n}_fit.json", fit)
 
-    print(f"\ncanonical fits at τ={SURVIVAL_THRESHOLD} (n={cfg_ns.n}, d={d}):")
+    print(f"\ncanonical fits at τ={SURVIVAL_THRESHOLD} (n={cfg_ns.n}, d={d}, "
+          f"seed-bootstrap SE, B={B}):")
     for slope in cfg_ns.slopes:
         f_ = slope_fit[f"{slope}"]
-        print(f"  s={slope}: ĝ = {f_['a']:.2f}·g^{f_['b']:.2f}")
+        print(f"  s={slope}: ĝ = {f_['a']:.2f}(±{f_['a_se']:.2f})·"
+              f"g^{f_['b']:.2f}(±{f_['b_se']:.2f})")
 
     if len(alphas) >= 2:
         plot_slope_law(fit, cfg_ns.outdir / f"fig8_slope_law_n{cfg_ns.n}.png")
@@ -176,8 +205,9 @@ def plot_slope_law(fit: dict, path) -> None:
 def main() -> None:
     set_style()
     cfg_ns = load_config("probe_slope_law_full.yaml", __doc__)
-    for alpha in cfg_ns.alphas:
-        run_alpha(cfg_ns, alpha)
+    if not cfg_ns.aggregate_only:
+        for alpha in cfg_ns.alphas:
+            run_alpha(cfg_ns, alpha)
     aggregate(cfg_ns)
 
 

@@ -1,25 +1,37 @@
 """Absolute-floor predictors: does the equilibrium correction fix Eq. 2?
 
-Three predictors of the ABSOLUTE loss floor are evaluated on every
+Predictors of the ABSOLUTE loss floor, evaluated on every
 (config, width, seed) point of the Exp 0 sweep:
 
-  (a) original Eq. 2:      F_kept = floor(d * g(alpha)), drop by importance;
-  (b) equilibrium count:   F = round(d * ghat(alpha)), with ghat = a*g^b the
-      canonical Zipf packing-law fit read from the slope-law probe output;
-  (c) per-feature form:    sum_i I_i * E[x_i^2] * (1 - C_i), with measured
-      fractional capacities C_i (diagnostic: tests whether count + partial
-      representation jointly explain absolute values).
+  (a)  original Eq. 2:     F_kept = floor(d * g(alpha)), drop by importance;
+  (b)  equilibrium count:  F = round(d * ghat(alpha)), ghat = a*g^b the
+       canonical Zipf packing-law fit from the slope-law probe (1 fitted law);
+       also reported with floor() instead of round() to quantify the
+       convention's effect near d*;
+  (b') measured kept set (ZERO fitted parameters): per run, Eq. 2 charged on
+       the run's own observed survived set S_obs:
+           floor' = sum_{i not in S_obs} I_i * E[x_i^2].
+       This is the decisive audit: if (b') fits, the floor is exactly the
+       dropped importance and the only modelling left is predicting |S|;
+  (c)  per-feature form:   sum_i I_i * E[x_i^2] * (1 - C_i), measured C_i
+       (diagnostic; overshoots — kept in tables, not in the headline figure).
 
-Predictor (a) underestimates floors (achieved > predicted everywhere,
-worst near/above d*) exactly as the refined Sarkar-Deka formula does on
-Pythia (their calibration needs C = 8.97 > 1). Reports R^2 on absolute
-values, overall and stratified by distance from d*, plus the d_S = d_T
-geometric/residual split. Produces the headline figure fig7
-(predicted vs observed, log-log, three series, y = x line).
+Gap decomposition per run (separates dropped-count error from interference):
+  achieved = sum_{i not in S} I_i*mse_i  (dropped part)
+           + sum_{i in S}     I_i*mse_i  (kept residual = interference).
+The dropped part is compared with the Eq. 2 charge E[x^2] per dropped
+feature; the kept residual is what no dropped-importance formula can see.
 
-Requires: exp0_*.json (from exp0_replication.py, with per-seed
-feature_capacity arrays) and probe_slope_law_n*_fit.json (from
-probe_slope_law.py) in the output directory.
+Strata are PRE-REGISTERED in the config as fixed d/d* bands
+(below: d/d* < 0.8, near: 0.8 <= d/d* <= 1.2, above: d/d* > 1.2).
+
+Reports R^2 and MAE per stratum for each predictor, pooled and per-config
+(12 units), plus the decomposition shares. Produces the headline figure
+fig7: predicted-vs-observed scatter for (a), (b), (b') and the gap
+decomposition vs d/d*.
+
+Requires: exp0_*.json (with per-seed col_norms_sq / feature_capacity /
+per_feature_mse) and probe_slope_law_n*_fit.json in the output directory.
 
     python experiments/predictors.py --config configs/predictors_full.yaml
 """
@@ -30,10 +42,13 @@ import sys
 import numpy as np
 
 from common import dump_json, load_config
+from src.metrics import SURVIVAL_THRESHOLD
 from src.plotting import OKABE_ITO, save_fig, set_style
 from src.theory import expected_x_sq, g_alpha, zipf_importances
 
 import matplotlib.pyplot as plt
+
+PREDICTORS = ["a", "b", "b_floor", "bp", "c"]
 
 
 def load_zipf_fit(outdir, fit_n: int) -> dict:
@@ -58,12 +73,6 @@ def floor_with_count(I: np.ndarray, F: int, alpha: float) -> float:
     return float(I[dropped].sum() * expected_x_sq(alpha))
 
 
-def floor_per_feature(I: np.ndarray, C: np.ndarray, alpha: float) -> float:
-    """Per-feature form: each feature charged I_i E[x^2] (1 - C_i)."""
-    C = np.clip(C, 0.0, 1.0)
-    return float((I * expected_x_sq(alpha) * (1.0 - C)).sum())
-
-
 def r2(obs: np.ndarray, pred: np.ndarray) -> float:
     """Coefficient of determination on absolute values (can go negative)."""
     obs, pred = np.asarray(obs), np.asarray(pred)
@@ -72,6 +81,10 @@ def r2(obs: np.ndarray, pred: np.ndarray) -> float:
     ss_res = np.sum((obs - pred) ** 2)
     ss_tot = np.sum((obs - obs.mean()) ** 2)
     return float(1.0 - ss_res / ss_tot) if ss_tot > 0 else float("nan")
+
+
+def mae(obs: np.ndarray, pred: np.ndarray) -> float:
+    return float(np.mean(np.abs(np.asarray(obs) - np.asarray(pred))))
 
 
 def collect(outdir, zipf_fit: dict) -> list[dict]:
@@ -83,54 +96,95 @@ def collect(outdir, zipf_fit: dict) -> list[dict]:
         cfg = out["config"]
         n, alpha = cfg["n"], cfg["alpha"]
         I = zipf_importances(n)
+        Ex2 = expected_x_sq(alpha)
         g = g_alpha(alpha)
         ghat = a_fit * g ** b_fit
-        if "feature_capacity" not in out:
-            sys.exit(f"{f.name} lacks per-seed feature_capacity — re-run "
-                     "exp0_replication.py first.")
-        capC = np.array(out["feature_capacity"])  # (W, S, n)
-        obs = np.array(out["achieved_floor"])  # (W, S)
+        for key in ("feature_capacity", "col_norms_sq", "per_feature_mse"):
+            if key not in out:
+                sys.exit(f"{f.name} lacks per-seed {key} — re-run "
+                         "exp0_replication.py first.")
+        capC = np.array(out["feature_capacity"])    # (W, S, n)
+        norms = np.array(out["col_norms_sq"])       # (W, S, n)
+        mse = np.array(out["per_feature_mse"])      # (W, S, n)
+        obs = np.array(out["achieved_floor"])       # (W, S)
         for w_i, d in enumerate(out["widths"]):
             pa = floor_with_count(I, int(np.floor(d * g)), alpha)
             pb = floor_with_count(I, int(round(d * ghat)), alpha)
+            pbf = floor_with_count(I, int(np.floor(d * ghat)), alpha)
             for s in range(cfg["n_seeds"]):
+                S_obs = norms[w_i, s] > SURVIVAL_THRESHOLD
+                wmse = I * mse[w_i, s]
                 rows.append({
                     "config": f"n{n}_a{alpha:.2f}", "n": n, "alpha": alpha,
                     "d": d, "seed": s, "d_star": out["critical_width"],
-                    "dist": d - out["critical_width"],
+                    "ratio": d / out["critical_width"],
                     "obs": float(obs[w_i, s]),
-                    "pred_a": pa, "pred_b": pb,
-                    "pred_c": floor_per_feature(I, capC[w_i, s], alpha),
+                    "pred_a": pa, "pred_b": pb, "pred_b_floor": pbf,
+                    # (b'): zero-parameter, this run's own kept set.
+                    "pred_bp": float(I[~S_obs].sum() * Ex2),
+                    "pred_c": float((I * Ex2 * (1 - np.clip(capC[w_i, s], 0, 1))).sum()),
+                    # Gap decomposition (importance-weighted, from measured MSE).
+                    "dropped_part": float(wmse[~S_obs].sum()),
+                    "kept_part": float(wmse[S_obs].sum()),
+                    "n_kept": int(S_obs.sum()),
                 })
     return rows
-
-
-def stratum(dist: float) -> str:
-    if dist < -1.0:
-        return "below"
-    if dist > 1.0:
-        return "above"
-    return "near"
 
 
 def analyze(cfg_ns) -> dict:
     outdir = cfg_ns.outdir
     zipf_fit = load_zipf_fit(outdir, cfg_ns.fit_n)
     rows = collect(outdir, zipf_fit)
-    obs = np.array([r["obs"] for r in rows])
-    preds = {k: np.array([r[f"pred_{k}"] for r in rows]) for k in "abc"}
-    strata = np.array([stratum(r["dist"]) for r in rows])
+    below_max = float(cfg_ns.strata["below_max"])
+    near_max = float(cfg_ns.strata["near_max"])
 
-    summary = {"overall": {k: r2(obs, preds[k]) for k in "abc"}}
+    def stratum(ratio: float) -> str:
+        if ratio < below_max:
+            return "below"
+        if ratio > near_max:
+            return "above"
+        return "near"
+
+    obs = np.array([r["obs"] for r in rows])
+    preds = {k: np.array([r[f"pred_{k}"] for r in rows]) for k in PREDICTORS}
+    strata = np.array([stratum(r["ratio"]) for r in rows])
+    configs = np.array([r["config"] for r in rows])
+
+    summary = {"overall": {**{k: r2(obs, preds[k]) for k in PREDICTORS},
+                           **{f"mae_{k}": mae(obs, preds[k]) for k in PREDICTORS}}}
     for s in ("below", "near", "above"):
         m = strata == s
         summary[s] = {"n_points": int(m.sum()),
-                      **{k: r2(obs[m], preds[k][m]) for k in "abc"}}
+                      **{k: r2(obs[m], preds[k][m]) for k in PREDICTORS},
+                      **{f"mae_{k}": mae(obs[m], preds[k][m]) for k in PREDICTORS}}
 
-    # d_S = d_T geometric/residual split. Predictor (b) is the validated
-    # geometric estimate; (c) overestimates (a partially represented feature
-    # plus an optimal bias recovers most of its variance), so its fraction
-    # is only a loose upper bound on the geometric share.
+    # Per-config aggregated R^2 (12 units) alongside the pooled values.
+    per_config = {}
+    for c in sorted(set(configs)):
+        m = configs == c
+        per_config[c] = {k: r2(obs[m], preds[k][m]) for k in PREDICTORS}
+    config_agg = {k: {"mean": float(np.nanmean([v[k] for v in per_config.values()])),
+                      "median": float(np.nanmedian([v[k] for v in per_config.values()]))}
+                  for k in PREDICTORS}
+
+    # Gap decomposition per stratum: shares of the achieved floor, and the
+    # measured dropped cost vs the Eq. 2 per-feature charge.
+    decomposition = {}
+    for s in ("overall", "below", "near", "above"):
+        m = np.ones(len(rows), bool) if s == "overall" else strata == s
+        dropped = np.array([r["dropped_part"] for r in rows])[m]
+        kept = np.array([r["kept_part"] for r in rows])[m]
+        pbp = preds["bp"][m]
+        tot = np.maximum(dropped + kept, 1e-12)
+        ok = pbp > 1e-9
+        decomposition[s] = {
+            "dropped_share": float(np.mean(dropped / tot)),
+            "kept_residual_share": float(np.mean(kept / tot)),
+            "dropped_vs_eq2_charge": float(np.mean(dropped[ok] / pbp[ok]))
+            if ok.any() else float("nan"),
+        }
+
+    # d_S = d_T geometric/residual split, by the zero-parameter (b').
     split = []
     for f in sorted(outdir.glob("exp0_*.json")):
         out = json.loads(f.read_text())
@@ -140,53 +194,74 @@ def analyze(cfg_ns) -> dict:
                  if r["config"] == tag_c and r["d"] == max(out["widths"])]
         L_obs = float(np.mean([r["obs"] for r in crows]))
         L_b = float(np.mean([r["pred_b"] for r in crows]))
+        L_bp = float(np.mean([r["pred_bp"] for r in crows]))
         L_c = float(np.mean([r["pred_c"] for r in crows]))
         split.append({
             "config": tag_c, "d_T": max(out["widths"]),
             "d_star": out["critical_width"], "L_obs": L_obs,
             "L_geometric_b": L_b, "L_residual_b": L_obs - L_b,
             "geometric_fraction_b": L_b / L_obs if L_obs > 0 else float("nan"),
+            "L_geometric_bp": L_bp,
+            "geometric_fraction_bp": L_bp / L_obs if L_obs > 0 else float("nan"),
             "L_geometric_c": L_c,
             "geometric_fraction_c": L_c / L_obs if L_obs > 0 else float("nan"),
         })
 
     result = {"zipf_fit": zipf_fit, "n_points": len(rows),
-              "r2_summary": summary, "dt_decomposition": split, "rows": rows}
+              "strata_definition": {"below": f"d/d* < {below_max}",
+                                    "near": f"{below_max} <= d/d* <= {near_max}",
+                                    "above": f"d/d* > {near_max}"},
+              "r2_summary": summary, "per_config_r2": per_config,
+              "per_config_aggregate": config_agg,
+              "decomposition": decomposition,
+              "dt_decomposition": split, "rows": rows}
     dump_json(outdir / "floor_predictors.json", result)
-    plot_scatter(rows, outdir / "fig7_predicted_vs_observed.png")
+    plot_headline(rows, summary, outdir / "fig7_predicted_vs_observed.png")
 
-    print(f"\n{len(rows)} points across {len({r['config'] for r in rows})} configs"
-          f"  (ĝ = {zipf_fit['a']:.2f}·g^{zipf_fit['b']:.2f})")
-    print("\nR^2 on ABSOLUTE floors:")
-    print(f"{'stratum':<8} {'n':>4} {'(a) Eq.2':>10} {'(b) equil':>10} {'(c) per-feat':>12}")
+    print(f"\n{len(rows)} points across {len(per_config)} configs "
+          f"(ĝ = {zipf_fit['a']:.2f}·g^{zipf_fit['b']:.2f}; strata: "
+          f"below<{below_max}, near {below_max}-{near_max}, above>{near_max})")
+    print("\nR^2 (MAE) on ABSOLUTE floors:")
+    hdr = f"{'stratum':<8} {'n':>4}"
+    for k in PREDICTORS:
+        hdr += f" {('(' + k + ')'):>16}"
+    print(hdr)
     for s in ("overall", "below", "near", "above"):
         d = summary[s]
         npts = d.get("n_points", len(rows))
-        print(f"{s:<8} {npts:>4} {d['a']:>10.3f} {d['b']:>10.3f} {d['c']:>12.3f}")
-    print("\nd_S=d_T geometric/residual split (mean over seeds):")
-    print(f"{'config':<12} {'L_obs':>9} {'L_geom(b)':>10} {'resid(b)':>9} "
-          f"{'gfrac(b)':>9} {'gfrac(c)':>9}")
-    for s in split:
-        print(f"{s['config']:<12} {s['L_obs']:>9.4f} {s['L_geometric_b']:>10.4f} "
-              f"{s['L_residual_b']:>9.4f} {s['geometric_fraction_b']:>9.2f} "
-              f"{s['geometric_fraction_c']:>9.2f}")
+        line = f"{s:<8} {npts:>4}"
+        for k in PREDICTORS:
+            line += f" {d[k]:>7.3f} ({d[f'mae_{k}']:.4f})"
+        print(line)
+    print("\nper-config aggregated R^2 (12 units):")
+    for k in PREDICTORS:
+        print(f"  ({k}): mean={config_agg[k]['mean']:.3f} "
+              f"median={config_agg[k]['median']:.3f}")
+    print("\ngap decomposition (mean shares of achieved floor):")
+    for s in ("overall", "below", "near", "above"):
+        dd = decomposition[s]
+        print(f"  {s:<8} dropped={dd['dropped_share']:.2f} "
+              f"kept-residual={dd['kept_residual_share']:.2f} "
+              f"dropped/Eq2-charge={dd['dropped_vs_eq2_charge']:.2f}")
     return result
 
 
-def plot_scatter(rows: list[dict], path) -> None:
-    """Headline fig 7: predicted vs observed absolute floor, log-log, y=x."""
+def plot_headline(rows: list[dict], summary: dict, path) -> None:
+    """Fig 7 (headline): (a)/(b)/(b') scatter + gap decomposition vs d/d*."""
     obs = np.array([r["obs"] for r in rows])
-    series = [("pred_a", "(a) Eq. 2  $F_{kept}$=⌊d·g⌋", OKABE_ITO["vermillion"], "o"),
+    ratio = np.array([r["ratio"] for r in rows])
+    series = [("pred_a", "(a) Eq. 2  F=⌊d·g⌋", OKABE_ITO["vermillion"], "o"),
               ("pred_b", "(b) equilibrium count", OKABE_ITO["blue"], "s"),
-              ("pred_c", "(c) per-feature $C_i$", OKABE_ITO["orange"], "^")]
+              ("pred_bp", "(b′) measured kept set (0 params)", OKABE_ITO["green"], "D")]
 
-    fig, ax = plt.subplots(figsize=(6.5, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.2))
+    ax = axes[0]
     lo = max(obs[obs > 0].min(), 1e-5)
     hi = obs.max() * 1.5
     for key, label, color, marker in series:
         pred = np.array([r[key] for r in rows])
         m = (pred > 0) & (obs > 0)
-        ax.scatter(obs[m], pred[m], s=16, alpha=0.55, color=color,
+        ax.scatter(obs[m], pred[m], s=14, alpha=0.5, color=color,
                    marker=marker, linewidths=0,
                    label=f"{label}  (R²={r2(obs, pred):.2f})")
         if m.any():
@@ -202,6 +277,21 @@ def plot_scatter(rows: list[dict], path) -> None:
     ax.set_title("Absolute-floor predictors vs observed\n"
                  "(Exp 0 sweep, all configs × widths × seeds)")
     ax.legend(fontsize=8, loc="upper left")
+
+    ax = axes[1]
+    tot = np.array([r["dropped_part"] + r["kept_part"] for r in rows])
+    tot = np.maximum(tot, 1e-12)
+    kept_share = np.array([r["kept_part"] for r in rows]) / tot
+    ax.scatter(ratio, kept_share, s=12, alpha=0.45, linewidths=0,
+               color=OKABE_ITO["orange"], label="kept-feature residual (interference)")
+    ax.scatter(ratio, 1 - kept_share, s=12, alpha=0.45, linewidths=0,
+               color=OKABE_ITO["purple"], label="dropped-feature importance")
+    ax.axvline(1.0, color="gray", linestyle=":", linewidth=1, label="d = d*")
+    ax.set_xlabel("d / d*")
+    ax.set_ylabel("share of achieved floor")
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_title("Where the loss lives:\ndropped importance vs kept-feature residual")
+    ax.legend(fontsize=8)
     save_fig(fig, path)
 
 

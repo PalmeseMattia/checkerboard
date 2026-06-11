@@ -2,27 +2,27 @@
 
 ## Executive summary
 
-**Headline result.** The refined Sarkar–Deka floor formula (Eq. 2) predicts absolute loss floors well *below* the critical width d* but collapses near/above it (R² goes negative). Replacing the kept count F = ⌊d·g(α)⌋ with the empirical equilibrium count F = round(d·ĝ), ĝ = 1.03·g(α)^0.53, restores a positive fit everywhere — the underestimation is exactly the importance the superposition equilibrium drops.
+**Headline result (audit).** The refined Sarkar–Deka floor formula (Eq. 2) predicts absolute loss floors well *below* the critical width d* but collapses near/above it (R² goes negative; per-config its median R² is negative even pooled-positive). The decisive zero-fitted-parameter test (b′) — Eq. 2 charged on each run's own measured kept set — is the best predictor in every stratum (overall R² = 0.97): Eq. 2's per-feature charging is essentially correct, and the entire failure of (a) is in predicting the kept COUNT. The one-fitted-law equilibrium count (b), F = round(d·ĝ) with ĝ = 1.03·g(α)^0.53, recovers most of (b′)'s accuracy without measuring the kept set.
 
-Absolute-floor R² (stratified by distance from d*):
+Absolute-floor R², pre-registered strata (d/d* < 0.8 / 0.8 <= d/d* <= 1.2 / d/d* > 1.2):
 
-| stratum | n | (a) Eq. 2 | (b) equilibrium | (c) per-feature |
+| stratum | n | (a) Eq. 2 | (b) equilibrium | (b′) measured kept set |
 |---|--:|--:|--:|--:|
-| overall | 600 | 0.515 | 0.968 | -0.525 |
-| below | 425 | 0.490 | 0.970 | -0.789 |
-| near | 115 | -3.231 | 0.695 | -7.522 |
-| above | 60 | -2.940 | 0.577 | -8.647 |
+| overall | 600 | 0.515 | 0.968 | 0.973 |
+| below | 385 | 0.571 | 0.974 | 0.973 |
+| near | 185 | -3.756 | 0.673 | 0.795 |
+| above | 30 | -2.026 | 0.491 | 0.635 |
 
 **Packing law ĝ(α, s) = a·g(α)^b** (n=200, d=10, τ=0.5, importance I ∝ i^−s):
 
-| slope s | a | b |
+| slope s | a ± SE | b ± SE |
 |--:|--:|--:|
-| 0 | 0.93 | 0.93 |
-| 0.5 | 1.03 | 0.69 |
-| 1 | 1.03 | 0.53 |
-| 1.5 | 0.99 | 0.44 |
-| 2 | 1.02 | 0.34 |
-| 3 | 0.82 | 0.34 |
+| 0 | 0.93 ± 0.01 | 0.93 ± 0.01 |
+| 0.5 | 1.03 ± 0.03 | 0.69 ± 0.01 |
+| 1 | 1.03 ± 0.03 | 0.53 ± 0.01 |
+| 1.5 | 0.99 ± 0.03 | 0.44 ± 0.02 |
+| 2 | 1.02 ± 0.03 | 0.34 ± 0.01 |
+| 3 | 0.82 ± 0.03 | 0.34 ± 0.02 |
 
 The exponent b falls monotonically with importance steepness, so the single Zipf exponent does not transfer across slopes — any C/d*/B recalibration must be slope-specific.
 
@@ -286,41 +286,62 @@ Pearson r (predicted vs achieved): **0.9765**
 
 ## Absolute-floor predictors — equilibrium correction
 
-Three predictors of the **absolute** floor on all 600 (config × width × seed) points: (a) original Eq. 2 F=⌊d·g⌋; (b) equilibrium count F=round(d·ĝ), ĝ=1.03·g(α)^0.53; (c) per-feature Σᵢ Iᵢ·E[xᵢ²]·(1−Cᵢ) with measured Cᵢ.
+Predictors of the **absolute** floor on all 600 (config × width × seed) points: (a) original Eq. 2 F=⌊d·g⌋; (b) equilibrium count F=round(d·ĝ), ĝ=1.03·g(α)^0.53 (also with floor() to quantify the rounding convention); **(b′) the zero-fitted-parameter audit** — Eq. 2 charged on each run's own measured kept set S_obs; (c) per-feature Σᵢ Iᵢ·E[xᵢ²]·(1−Cᵢ) with measured Cᵢ.
 
-**R² on absolute floors** (negative = worse than predicting the mean):
+Strata are pre-registered d/d* bands: below = d/d* < 0.8, near = 0.8 <= d/d* <= 1.2, above = d/d* > 1.2.
 
-| stratum (dist. from d*) | n | (a) Eq. 2 | (b) equilibrium | (c) per-feature |
-|---|--:|--:|--:|--:|
-| overall | 600 | 0.515 | 0.968 | -0.525 |
-| below | 425 | 0.490 | 0.970 | -0.789 |
-| near | 115 | -3.231 | 0.695 | -7.522 |
-| above | 60 | -2.940 | 0.577 | -8.647 |
+**R² (MAE) on absolute floors** (negative R² = worse than predicting the mean):
 
-Eq. 2 (a) is adequate below d* (R² = 0.49, where 425/600 points sit) but collapses near/above d* (R² = -3.23 / -2.94); the equilibrium count (b) lifts both to 0.69 / 0.58 (0.97 overall). Predictor (c) overshoots (R² = -0.53): a partially represented feature plus an optimal bias recovers most of its variance, so fractional capacity does not map linearly to loss.
+| stratum | n | (a) Eq. 2 | (b) equilibrium | (b) w/ floor() | (b′) measured kept set | (c) per-feature |
+|---|--:|--:|--:|--:|--:|--:|
+| overall | 600 | 0.515 (0.0255) | 0.968 (0.0061) | 0.933 (0.0067) | 0.973 (0.0050) | -0.525 (0.0445) |
+| below | 385 | 0.571 (0.0251) | 0.974 (0.0055) | 0.918 (0.0067) | 0.973 (0.0048) | -0.651 (0.0479) |
+| near | 185 | -3.756 (0.0284) | 0.673 (0.0075) | 0.720 (0.0069) | 0.795 (0.0058) | -8.588 (0.0405) |
+| above | 30 | -2.026 (0.0138) | 0.491 (0.0057) | 0.564 (0.0052) | 0.635 (0.0042) | -10.243 (0.0245) |
+
+Per-config aggregated R² (12 units, mean / median): (a) Eq. 2 -5.43 / -1.17; (b) equilibrium -0.04 / 0.83; (b) w/ floor() 0.08 / 0.84; (b′) measured kept set 0.91 / 0.91; (c) per-feature -4.70 / -4.61.
+
+**Reading.** Pooled, Eq. 2 (a) looks adequate below d* (R² = 0.57) and collapses near/above (R² = -3.76 / -2.03); per-config its median R² is -1.17 — the pooled number is held up by cross-config variance. The one-fitted-law equilibrium count (b) lifts the strata to 0.67 / 0.49; the rounding convention is worth ±0.03–0.07 R² near d* (see the floor() column). The zero-parameter (b′) is the best predictor in every stratum (0.97 overall; per-config mean 0.91): once the kept set is known, Eq. 2's charging is essentially correct — the entire failure of (a) is in predicting the kept COUNT, not the per-feature cost. Predictor (c) overshoots (R² = -0.53): fractional capacity does not map linearly to loss.
+
+### Gap decomposition — where the loss lives
+
+Per run, achieved floor = Σ_{i∉S} Iᵢ·mseᵢ (dropped importance) + Σ_{i∈S} Iᵢ·mseᵢ (kept-feature residual = interference):
+
+| stratum | dropped share | kept-residual share | measured dropped cost / Eq. 2 charge |
+|---|--:|--:|--:|
+| overall | 0.82 | 0.18 | 0.90 |
+| below | 0.87 | 0.13 | 0.90 |
+| near | 0.73 | 0.27 | 0.91 |
+| above | 0.72 | 0.28 | 0.94 |
+
+Dropped importance carries most of the floor everywhere; the kept-feature interference residual grows toward d* but stays the minority share. The measured per-dropped-feature cost is ≈0.9× the Eq. 2 charge E[x²] (slightly below 1: a bias-optimal constant recovers Var(x) < E[x²]).
 
 ![predicted vs observed](fig7_predicted_vs_observed.png)
 
 ### d_S = d_T geometric/residual split
 
-Their Pythia baseline B is read at d_S = d_T assuming the geometric term ≈ 0. Using the validated predictor (b) as the geometric estimate (gfrac via (c) is the loose upper bound from the overshooting form):
+Their Pythia baseline B is read at d_S = d_T assuming the geometric term ≈ 0. Geometric estimates: (b′) measured kept set (preferred, zero parameters), (b) fitted law, (c) loose upper bound:
 
-| config | d_T | L_obs | L_geom (b) | L_resid (b) | gfrac (b) | gfrac (c) |
-|---|--:|--:|--:|--:|--:|--:|
-| n20_a0.80 | 8 | 0.0311 | 0.0186 | 0.0125 | 0.60 | 2.89 |
-| n20_a0.90 | 6 | 0.0207 | 0.0115 | 0.0091 | 0.56 | 3.23 |
-| n20_a0.95 | 4 | 0.0147 | 0.0096 | 0.0051 | 0.66 | 2.67 |
-| n20_a0.99 | 2 | 0.0048 | 0.0019 | 0.0029 | 0.40 | 1.88 |
-| n40_a0.80 | 14 | 0.0395 | 0.0283 | 0.0112 | 0.72 | 2.38 |
-| n40_a0.90 | 11 | 0.0233 | 0.0154 | 0.0079 | 0.66 | 2.81 |
-| n40_a0.95 | 7 | 0.0163 | 0.0113 | 0.0050 | 0.69 | 2.84 |
-| n40_a0.99 | 3 | 0.0055 | 0.0030 | 0.0025 | 0.54 | 2.01 |
-| n80_a0.80 | 27 | 0.0425 | 0.0298 | 0.0127 | 0.70 | 2.17 |
-| n80_a0.90 | 20 | 0.0265 | 0.0190 | 0.0075 | 0.72 | 2.54 |
-| n80_a0.95 | 13 | 0.0175 | 0.0127 | 0.0048 | 0.73 | 2.55 |
-| n80_a0.99 | 5 | 0.0058 | 0.0036 | 0.0022 | 0.62 | 2.32 |
+| config | d_T | L_obs | gfrac (b′) | gfrac (b) | gfrac (c) |
+|---|--:|--:|--:|--:|--:|
+| n20_a0.80 | 8 | 0.0311 | 0.65 | 0.60 | 2.89 |
+| n20_a0.90 | 6 | 0.0207 | 0.61 | 0.56 | 3.23 |
+| n20_a0.95 | 4 | 0.0147 | 0.73 | 0.66 | 2.67 |
+| n20_a0.99 | 2 | 0.0048 | 0.96 | 0.40 | 1.88 |
+| n40_a0.80 | 14 | 0.0395 | 0.80 | 0.72 | 2.38 |
+| n40_a0.90 | 11 | 0.0233 | 0.66 | 0.66 | 2.81 |
+| n40_a0.95 | 7 | 0.0163 | 0.71 | 0.69 | 2.84 |
+| n40_a0.99 | 3 | 0.0055 | 0.83 | 0.54 | 2.01 |
+| n80_a0.80 | 27 | 0.0425 | 0.85 | 0.70 | 2.17 |
+| n80_a0.90 | 20 | 0.0265 | 0.71 | 0.72 | 2.54 |
+| n80_a0.95 | 13 | 0.0175 | 0.70 | 0.73 | 2.55 |
+| n80_a0.99 | 5 | 0.0058 | 0.78 | 0.62 | 2.32 |
 
-Mean geometric fraction at d_S = d_T (predictor b): **0.63** (range 0.40–0.73). A substantial geometric share means the architectural baseline B is contaminated by superposition cost, not a pure width-independent residual.
+Geometric fraction at d_S = d_T via (b′): **0.61–0.96** (mean 0.75).
+
+Geometric fraction at d_S = d_T via (b): **0.40–0.73** (mean 0.63).
+
+A substantial geometric share means the architectural baseline B is contaminated by superposition cost, not a pure width-independent residual.
 
 ## Exp A — Allocation audit of vanilla distillation
 
@@ -437,16 +458,16 @@ Across τ ∈ [0.3, 0.7] the norm² exponents stay in uniform [0.93, 0.93], Zipf
 
 ### Capacity scaling vs importance slope ĝ(α, s)
 
-Fit ĝ(α) = a·g(α)^b at τ=0.5 for I ∝ i^(−s):
+Fit ĝ(α) = a·g(α)^b at τ=0.5 for I ∝ i^(−s); ± values are seed-bootstrap standard errors (B=1000):
 
-| slope s | a | b | surv/d @α=0.8 | surv/d @α=0.9 | surv/d @α=0.95 | surv/d @α=0.99 |
+| slope s | a ± SE | b ± SE | surv/d @α=0.8 | surv/d @α=0.9 | surv/d @α=0.95 | surv/d @α=0.99 |
 |--:|--:|--:|--:|--:|--:|--:|
-| 0 | 0.93 | 0.93 | 2.47 | 4.00 | 5.70 | 16.13 |
-| 0.5 | 1.03 | 0.69 | 2.07 | 3.03 | 4.03 | 8.37 |
-| 1 | 1.03 | 0.53 | 1.83 | 2.33 | 2.83 | 5.30 |
-| 1.5 | 0.99 | 0.44 | 1.63 | 1.83 | 2.33 | 3.80 |
-| 2 | 1.02 | 0.34 | 1.43 | 1.77 | 1.97 | 2.87 |
-| 3 | 0.82 | 0.34 | 0.97 | 1.60 | 1.70 | 2.13 |
+| 0 | 0.93 ± 0.01 | 0.93 ± 0.01 | 2.47 | 4.00 | 5.70 | 16.13 |
+| 0.5 | 1.03 ± 0.03 | 0.69 ± 0.01 | 2.07 | 3.03 | 4.03 | 8.37 |
+| 1 | 1.03 ± 0.03 | 0.53 ± 0.01 | 1.83 | 2.33 | 2.83 | 5.30 |
+| 1.5 | 0.99 ± 0.03 | 0.44 ± 0.02 | 1.63 | 1.83 | 2.33 | 3.80 |
+| 2 | 1.02 ± 0.03 | 0.34 ± 0.01 | 1.43 | 1.77 | 1.97 | 2.87 |
+| 3 | 0.82 ± 0.03 | 0.34 ± 0.02 | 0.97 | 1.60 | 1.70 | 2.13 |
 
 ![slope law](fig8_slope_law_n200.png)
 
@@ -460,7 +481,7 @@ Is the sub-g uniform packing fraction at α=0.99 a real equilibrium or slow symm
 | n400 (1×) | 400 | 1e+06 | 16.10 | 0.74 |
 | n400 (3×) | 400 | 3e+06 | 15.63 | 0.72 |
 
-**Verdict:** 3× training changes survived/d by -0.47 (-3%). The fraction plateaus — the sub-g packing is a real equilibrium, not an optimization artifact.
+**Verdict:** at fixed n=400, tripling the training budget changes survived/d by -0.47 (-2.9%). The fraction plateaus — the sub-g packing is a real equilibrium, not an optimization artifact. Relative to the n=200 baseline the n=400 3× value is -4.7% — an n-dependence of the prefactor, listed as a limitation in the README.
 
 ## Capacity-bound gap probe (n=200, d=10)
 

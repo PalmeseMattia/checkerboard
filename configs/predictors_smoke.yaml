@@ -1,2 +1,5 @@
 fit_n: 40
+strata:
+  below_max: 0.8
+  near_max: 1.2
 outdir: results/smoke

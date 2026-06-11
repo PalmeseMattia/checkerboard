@@ -141,8 +141,9 @@ def aggregate(cfg_ns) -> None:
 def main() -> None:
     set_style()
     cfg_ns = load_config("probe_capacity_full.yaml", __doc__)
-    for alpha in cfg_ns.alphas:
-        run_alpha(cfg_ns, alpha)
+    if not cfg_ns.aggregate_only:
+        for alpha in cfg_ns.alphas:
+            run_alpha(cfg_ns, alpha)
     aggregate(cfg_ns)
 
 

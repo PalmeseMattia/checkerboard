@@ -36,24 +36,32 @@ def section_executive(outdir: Path) -> list[str]:
         d = _load(fp)
         s = d["r2_summary"]
         a, b = d["zipf_fit"]["a"], d["zipf_fit"]["b"]
+        sd = d["strata_definition"]
         lines += [
-            "**Headline result.** The refined Sarkar–Deka floor formula (Eq. 2) "
-            "predicts absolute loss floors well *below* the critical width d* "
-            f"but collapses near/above it (R² goes negative). Replacing the kept "
-            f"count F = ⌊d·g(α)⌋ with the empirical equilibrium count "
-            f"F = round(d·ĝ), ĝ = {a:.2f}·g(α)^{b:.2f}, restores a positive fit "
-            "everywhere — the underestimation is exactly the importance the "
-            "superposition equilibrium drops.",
+            "**Headline result (audit).** The refined Sarkar–Deka floor "
+            "formula (Eq. 2) predicts absolute loss floors well *below* the "
+            "critical width d* but collapses near/above it (R² goes negative; "
+            "per-config its median R² is negative even pooled-positive). The "
+            "decisive zero-fitted-parameter test (b′) — Eq. 2 charged on each "
+            "run's own measured kept set — is the best predictor in every "
+            f"stratum (overall R² = {s['overall']['bp']:.2f}): Eq. 2's "
+            "per-feature charging is essentially correct, and the entire "
+            "failure of (a) is in predicting the kept COUNT. The one-fitted-law "
+            f"equilibrium count (b), F = round(d·ĝ) with ĝ = "
+            f"{a:.2f}·g(α)^{b:.2f}, recovers most of (b′)'s accuracy without "
+            "measuring the kept set.",
             "",
-            "Absolute-floor R² (stratified by distance from d*):",
+            f"Absolute-floor R², pre-registered strata ({sd['below']} / "
+            f"{sd['near']} / {sd['above']}):",
             "",
-            "| stratum | n | (a) Eq. 2 | (b) equilibrium | (c) per-feature |",
+            "| stratum | n | (a) Eq. 2 | (b) equilibrium | (b′) measured kept set |",
             "|---|--:|--:|--:|--:|",
         ]
         for k in ("overall", "below", "near", "above"):
             r = s[k]
             npts = r.get("n_points", d["n_points"])
-            lines.append(f"| {k} | {npts} | {r['a']:.3f} | {r['b']:.3f} | {r['c']:.3f} |")
+            lines.append(f"| {k} | {npts} | {r['a']:.3f} | {r['b']:.3f} "
+                         f"| {r['bp']:.3f} |")
         lines.append("")
     for fit_file in sorted(outdir.glob("probe_slope_law_n*_fit.json")):
         sl = _load(fit_file)
@@ -63,12 +71,13 @@ def section_executive(outdir: Path) -> list[str]:
             f"**Packing law ĝ(α, s) = a·g(α)^b** (n={sl['n']}, d={sl['width']}, "
             "τ=0.5, importance I ∝ i^−s):",
             "",
-            "| slope s | a | b |",
+            "| slope s | a ± SE | b ± SE |",
             "|--:|--:|--:|",
         ]
         for s_ in sl["slopes"]:
             f_ = sl["slope_fit"][f"{s_}"]
-            lines.append(f"| {s_} | {f_['a']:.2f} | {f_['b']:.2f} |")
+            lines.append(f"| {s_} | {f_['a']:.2f} ± {f_.get('a_se', float('nan')):.2f} "
+                         f"| {f_['b']:.2f} ± {f_.get('b_se', float('nan')):.2f} |")
         lines += ["", "The exponent b falls monotonically with importance "
                   "steepness, so the single Zipf exponent does not transfer "
                   "across slopes — any C/d*/B recalibration must be slope-specific.",
@@ -131,49 +140,90 @@ def section_predictors(outdir: Path) -> list[str]:
     d = _load(fp)
     s = d["r2_summary"]
     a, b = d["zipf_fit"]["a"], d["zipf_fit"]["b"]
+    sd = d["strata_definition"]
+    labels = {"a": "(a) Eq. 2", "b": "(b) equilibrium", "b_floor": "(b) w/ floor()",
+              "bp": "(b′) measured kept set", "c": "(c) per-feature"}
     lines = [
         "## Absolute-floor predictors — equilibrium correction", "",
-        f"Three predictors of the **absolute** floor on all {d['n_points']} "
+        f"Predictors of the **absolute** floor on all {d['n_points']} "
         "(config × width × seed) points: (a) original Eq. 2 F=⌊d·g⌋; "
-        f"(b) equilibrium count F=round(d·ĝ), ĝ={a:.2f}·g(α)^{b:.2f}; "
-        "(c) per-feature Σᵢ Iᵢ·E[xᵢ²]·(1−Cᵢ) with measured Cᵢ.", "",
-        "**R² on absolute floors** (negative = worse than predicting the mean):", "",
-        "| stratum (dist. from d*) | n | (a) Eq. 2 | (b) equilibrium | (c) per-feature |",
-        "|---|--:|--:|--:|--:|",
+        f"(b) equilibrium count F=round(d·ĝ), ĝ={a:.2f}·g(α)^{b:.2f} "
+        "(also with floor() to quantify the rounding convention); "
+        "**(b′) the zero-fitted-parameter audit** — Eq. 2 charged on each "
+        "run's own measured kept set S_obs; (c) per-feature "
+        "Σᵢ Iᵢ·E[xᵢ²]·(1−Cᵢ) with measured Cᵢ.", "",
+        f"Strata are pre-registered d/d* bands: below = {sd['below']}, "
+        f"near = {sd['near']}, above = {sd['above']}.", "",
+        "**R² (MAE) on absolute floors** (negative R² = worse than "
+        "predicting the mean):", "",
+        "| stratum | n | " + " | ".join(labels.values()) + " |",
+        "|---|--:|" + "--:|" * len(labels),
     ]
     for k in ("overall", "below", "near", "above"):
         r = s[k]
         npts = r.get("n_points", d["n_points"])
-        lines.append(f"| {k} | {npts} | {r['a']:.3f} | {r['b']:.3f} | {r['c']:.3f} |")
+        cells = " | ".join(f"{r[p]:.3f} ({r[f'mae_{p}']:.4f})" for p in labels)
+        lines.append(f"| {k} | {npts} | {cells} |")
+    agg = d["per_config_aggregate"]
     lines += [
         "",
-        f"Eq. 2 (a) is adequate below d* (R² = {s['below']['a']:.2f}, where "
-        f"{s['below']['n_points']}/{d['n_points']} points sit) but collapses "
-        f"near/above d* (R² = {s['near']['a']:.2f} / {s['above']['a']:.2f}); "
-        f"the equilibrium count (b) lifts both to "
-        f"{s['near']['b']:.2f} / {s['above']['b']:.2f} "
-        f"({s['overall']['b']:.2f} overall). Predictor (c) overshoots "
-        f"(R² = {s['overall']['c']:.2f}): a partially represented feature plus "
-        "an optimal bias recovers most of its variance, so fractional capacity "
-        "does not map linearly to loss.",
+        "Per-config aggregated R² (12 units, mean / median): "
+        + "; ".join(f"{labels[p]} {agg[p]['mean']:.2f} / {agg[p]['median']:.2f}"
+                    for p in labels) + ".",
+        "",
+        f"**Reading.** Pooled, Eq. 2 (a) looks adequate below d* "
+        f"(R² = {s['below']['a']:.2f}) and collapses near/above "
+        f"(R² = {s['near']['a']:.2f} / {s['above']['a']:.2f}); per-config its "
+        f"median R² is {agg['a']['median']:.2f} — the pooled number is held up "
+        "by cross-config variance. The one-fitted-law equilibrium count (b) "
+        f"lifts the strata to {s['near']['b']:.2f} / {s['above']['b']:.2f}; the "
+        f"rounding convention is worth ±0.03–0.07 R² near d* (see the floor() "
+        "column). The zero-parameter (b′) is the best predictor in every "
+        f"stratum ({s['overall']['bp']:.2f} overall; per-config mean "
+        f"{agg['bp']['mean']:.2f}): once the kept set is known, Eq. 2's "
+        "charging is essentially correct — the entire failure of (a) is in "
+        "predicting the kept COUNT, not the per-feature cost. Predictor (c) "
+        f"overshoots (R² = {s['overall']['c']:.2f}): fractional capacity does "
+        "not map linearly to loss.", "",
+        "### Gap decomposition — where the loss lives", "",
+        "Per run, achieved floor = Σ_{i∉S} Iᵢ·mseᵢ (dropped importance) + "
+        "Σ_{i∈S} Iᵢ·mseᵢ (kept-feature residual = interference):", "",
+        "| stratum | dropped share | kept-residual share | measured dropped "
+        "cost / Eq. 2 charge |",
+        "|---|--:|--:|--:|",
+    ]
+    for k in ("overall", "below", "near", "above"):
+        dd = d["decomposition"][k]
+        lines.append(f"| {k} | {dd['dropped_share']:.2f} "
+                     f"| {dd['kept_residual_share']:.2f} "
+                     f"| {dd['dropped_vs_eq2_charge']:.2f} |")
+    lines += [
+        "",
+        "Dropped importance carries most of the floor everywhere; the "
+        "kept-feature interference residual grows toward d* but stays the "
+        "minority share. The measured per-dropped-feature cost is ≈0.9× the "
+        "Eq. 2 charge E[x²] (slightly below 1: a bias-optimal constant "
+        "recovers Var(x) < E[x²]).",
         "", "![predicted vs observed](fig7_predicted_vs_observed.png)", "",
         "### d_S = d_T geometric/residual split", "",
         "Their Pythia baseline B is read at d_S = d_T assuming the geometric "
-        "term ≈ 0. Using the validated predictor (b) as the geometric estimate "
-        "(gfrac via (c) is the loose upper bound from the overshooting form):", "",
-        "| config | d_T | L_obs | L_geom (b) | L_resid (b) | gfrac (b) | gfrac (c) |",
-        "|---|--:|--:|--:|--:|--:|--:|",
+        "term ≈ 0. Geometric estimates: (b′) measured kept set (preferred, "
+        "zero parameters), (b) fitted law, (c) loose upper bound:", "",
+        "| config | d_T | L_obs | gfrac (b′) | gfrac (b) | gfrac (c) |",
+        "|---|--:|--:|--:|--:|--:|",
     ]
     for r in d["dt_decomposition"]:
         lines.append(f"| {r['config']} | {r['d_T']} | {r['L_obs']:.4f} "
-                     f"| {r['L_geometric_b']:.4f} | {r['L_residual_b']:.4f} "
-                     f"| {r['geometric_fraction_b']:.2f} | {r['geometric_fraction_c']:.2f} |")
-    gf = [r["geometric_fraction_b"] for r in d["dt_decomposition"]
-          if np.isfinite(r["geometric_fraction_b"])]
-    lines += ["", f"Mean geometric fraction at d_S = d_T (predictor b): "
-              f"**{np.mean(gf):.2f}** (range {np.min(gf):.2f}–{np.max(gf):.2f}). "
-              "A substantial geometric share means the architectural baseline B "
-              "is contaminated by superposition cost, not a pure "
+                     f"| {r['geometric_fraction_bp']:.2f} "
+                     f"| {r['geometric_fraction_b']:.2f} "
+                     f"| {r['geometric_fraction_c']:.2f} |")
+    for key, lab in (("geometric_fraction_bp", "b′"), ("geometric_fraction_b", "b")):
+        gf = [r[key] for r in d["dt_decomposition"] if np.isfinite(r[key])]
+        lines += [f"", f"Geometric fraction at d_S = d_T via ({lab}): "
+                  f"**{np.min(gf):.2f}–{np.max(gf):.2f}** "
+                  f"(mean {np.mean(gf):.2f})."]
+    lines += ["", "A substantial geometric share means the architectural "
+              "baseline B is contaminated by superposition cost, not a pure "
               "width-independent residual.", ""]
     return lines
 
@@ -353,14 +403,18 @@ def section_slope_law(outdir: Path) -> list[str]:
                   f"[{min(nb):.2f}, {max(nb):.2f}], Zipf [{min(zb):.2f}, {max(zb):.2f}] "
                   "— the split is threshold-stable.", "",
                   "### Capacity scaling vs importance slope ĝ(α, s)", "",
-                  "Fit ĝ(α) = a·g(α)^b at τ=0.5 for I ∝ i^(−s):", "",
-                  "| slope s | a | b | " +
+                  "Fit ĝ(α) = a·g(α)^b at τ=0.5 for I ∝ i^(−s); ± values are "
+                  "seed-bootstrap standard errors (B=1000):", "",
+                  "| slope s | a ± SE | b ± SE | " +
                   " | ".join(f"surv/d @α={a}" for a in sl["alphas"]) + " |",
                   "|--:|--:|--:|" + "--:|" * len(sl["alphas"])]
         for s_ in sl["slopes"]:
             f_ = sl["slope_fit"][f"{s_}"]
             surv = np.array(sl["survived_by_slope_tau0.5"][f"{s_}"]) / d
-            lines.append(f"| {s_} | {f_['a']:.2f} | {f_['b']:.2f} | "
+            a_se = f_.get("a_se", float("nan"))
+            b_se = f_.get("b_se", float("nan"))
+            lines.append(f"| {s_} | {f_['a']:.2f} ± {a_se:.2f} "
+                         f"| {f_['b']:.2f} ± {b_se:.2f} | "
                          + " | ".join(f"{x:.2f}" for x in surv) + " |")
         lines += ["", f"![slope law](fig8_slope_law_n{sl['n']}.png)", ""]
     return lines
@@ -422,14 +476,23 @@ def section_convergence(outdir: Path) -> list[str]:
         lines.append(f"| {label} | {n} | {act:.2g} | {sd:.2f} | {sd / G:.2f} |")
     n400 = [r for r in runs if r[1] == 400]
     if len(n400) >= 2:
+        # Same-n endpoints for the training-budget claim (n=400, 1x -> 3x).
         rise = n400[-1][3] - n400[0][3]
         rel = rise / max(n400[0][3], 1e-9)
-        verdict = (f"**Verdict:** 3× training changes survived/d by {rise:+.2f} "
-                   f"({rel:+.0%}). "
+        base = [r for r in runs if r[1] == 200]
+        cross = ""
+        if base:
+            rel_n = (n400[-1][3] - base[0][3]) / max(base[0][3], 1e-9)
+            cross = (f" Relative to the n=200 baseline the n=400 3× value is "
+                     f"{rel_n:+.1%} — an n-dependence of the prefactor, listed "
+                     f"as a limitation in the README.")
+        verdict = (f"**Verdict:** at fixed n=400, tripling the training budget "
+                   f"changes survived/d by {rise:+.2f} ({rel:+.1%}). "
                    + ("The fraction plateaus — the sub-g packing is a real "
                       "equilibrium, not an optimization artifact."
                       if abs(rel) < 0.05 else
-                      "Materially convergence-limited; report with this caveat."))
+                      "Materially convergence-limited; report with this caveat.")
+                   + cross)
         lines += ["", verdict, ""]
     return lines
 

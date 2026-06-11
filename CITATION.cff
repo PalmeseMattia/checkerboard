@@ -27,7 +27,7 @@ keywords:
   - toy models
   - capacity
 license: MIT
-version: 1.0.0
+version: 1.1.0
 date-released: "2026-06-11"
 references:
   - type: article
@@ -59,3 +59,14 @@ references:
     identifiers:
       - type: other
         value: "arXiv:2210.01892"
+  - type: article
+    title: >-
+      Superposition Yields Robust Neural Scaling
+    authors:
+      - family-names: Liu
+      - family-names: Liu
+      - family-names: Gore
+    year: 2025
+    identifiers:
+      - type: other
+        value: "arXiv:2505.10465"

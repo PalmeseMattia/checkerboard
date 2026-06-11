@@ -31,27 +31,34 @@ reproducibility is the product, not a side effect.
 
 ## Summary of findings
 
-The refined Eq. 2 loss floor of Sarkar & Deka tracks achieved floors well
-*below* the critical width d* (Pearson r ≈ 0.98 across a 12-config sweep)
-but **systematically underestimates absolute floors near and above d*** —
+This is an **audit** of the assumptions behind the Sarkar & Deka loss-floor
+theorem, in the toy-model regime where those assumptions can be measured
+directly. The refined Eq. 2 floor tracks achieved floors well *below* the
+critical width d* (Pearson r ≈ 0.98 across a 12-config sweep) but
+**systematically underestimates absolute floors near and above d*** —
 exactly the regime their Pythia calibration patches with a constant
-C = 8.97 > 1. The cause is their **assumption A2** (a width-d student keeps
-exactly the top ⌊d·g(α)⌋ features by importance): trained students instead
-settle at a *superposition equilibrium* that keeps **fewer, cleaner**
-features, so more importance is dropped than Eq. 2 charges.
+C = 8.97 > 1. The audit localizes the failure precisely: the
+**zero-fitted-parameter predictor (b′)** — Eq. 2 charged on each run's own
+*measured* kept set — is the best absolute predictor in every stratum
+(R² = 0.97 overall, 0.80 near d*, 0.64 above; per-config mean 0.91), and
+the measured per-dropped-feature cost is ≈0.9× the Eq. 2 charge. So Eq. 2's
+*charging* is essentially correct; what fails is **assumption A2's kept
+count**: trained students settle at a superposition equilibrium that keeps
+fewer, cleaner features than F = ⌊d·g(α)⌋.
 
-Replacing the kept count with an empirically fitted equilibrium count,
-**F = round(d·ĝ(α)) with ĝ(α) = 1.03·g(α)^0.53**, flips the absolute-floor
-R² from negative to positive in the near/above-d* strata (near:
-−3.2 → 0.70; above: −2.9 → 0.58). The packing exponent is
-importance-slope dependent (b falls from 0.93 for uniform importances to
-0.34 for steep power laws), so any recalibration of their C/d*/B must be
-slope-specific. Vanilla distillation respects A2's *ordering* about as well
-as direct training but adds a hard *menu* constraint (students keep only
-features their teacher represents); controlled placement can override
-emergent allocation at a cost predictable from the theory, until the
-teacher menu binds. On block-anticorrelated data, emergent superposition
-already beats the iid floor — the theory's iid assumption is conservative.
+Replacing the kept count with a one-fitted-law equilibrium count,
+**F = round(d·ĝ(α)) with ĝ(α) = 1.03·g(α)^0.53** (seed-bootstrap SE ±0.03 /
+±0.01), recovers most of (b′)'s accuracy without measuring anything: the
+near/above-d* strata go from R² = −3.8 / −2.0 (Eq. 2) to 0.67 / 0.49. The
+packing exponent is importance-slope dependent (b falls from 0.93 ± 0.01
+for uniform importances to 0.34 ± 0.02 at s = 3), so any recalibration of
+their C/d*/B must be slope-specific. Vanilla distillation respects A2's
+*ordering* about as well as direct training but adds a hard *menu*
+constraint (students keep only features their teacher represents);
+controlled placement can override emergent allocation at a small absolute
+cost, until the teacher menu binds. On block-anticorrelated data, emergent
+superposition already beats the iid floor — the theory's iid assumption is
+conservative.
 
 > **Scope.** This is a toy-model study (single ReLU decoder family,
 > synthetic sparse data). It is an instrument for auditing the theory's
@@ -108,8 +115,8 @@ Each claim regenerates from a clean clone with the listed command
 | # | Claim | Experiment | Figure | Command |
 |---|-------|-----------|--------|---------|
 | 1 | Eq. 2 floor tracks achieved floors (r > 0.9) but underestimates magnitude | Exp 0 | `fig1_floor_*`, `fig2_survival_*` | `exp0_replication.py --config configs/exp0_full.yaml` |
-| 2 | Eq. 2 R² goes **negative** near/above d*; the equilibrium count restores it | predictors | **`fig7_predicted_vs_observed.png`** | `predictors.py --config configs/predictors_full.yaml` |
-| 3 | At d_S=d_T ~63% of the floor is geometric → baseline B is contaminated | predictors (task 2) | `fig7` | same as #2 |
+| 2 | Eq. 2 R² goes **negative** near/above d*; the zero-parameter (b′) and the equilibrium count (b) restore it — the failure is the kept count, not the charging | predictors | **`fig7_predicted_vs_observed.png`** | `predictors.py --config configs/predictors_full.yaml` |
+| 3 | At d_S=d_T the geometric share of the floor is 0.61–0.96 (mean 0.75) via the measured kept set (b′), 0.40–0.73 (mean 0.63) via the fitted law (b) → baseline B is contaminated | predictors | `fig7` | same as #2 |
 | 4 | g(α) bound is reachable with uniform importances; Zipf equilibrates below it | capacity probe | `fig_probe_capacity_n200.png` | `probe_capacity.py --config configs/probe_capacity_full.yaml` |
 | 5 | Packing exponent b is threshold-stable and slope-dependent (0.93 → 0.34) | slope-law probe | `fig8_slope_law_n200.png` | `probe_slope_law.py --config configs/probe_slope_law_full.yaml` |
 | 6 | α=0.99 uniform sub-g packing is a real equilibrium, not under-training | convergence | (table in report) | `probe_slope_law.py --config configs/convergence_n400_{1x,3x}.yaml` |
@@ -131,35 +138,49 @@ predicted and achieved floors is **0.98** (n=20/α=0.99 is degenerate —
 d* < 1 so L* ≡ 0 — and is footnoted out). But achieved > predicted
 everywhere, and the gap widens toward d*.
 
-**Floor predictors (the core result).** Absolute-floor R² on 600 points
-(12 configs × widths × seeds), stratified by distance from d*:
+**Floor predictors (the core result).** Absolute-floor R² (MAE in
+parentheses) on 600 points (12 configs × widths × seeds). Strata are
+**pre-registered** d/d* bands fixed in `configs/predictors_full.yaml`:
+below d/d* < 0.8, near 0.8–1.2, above > 1.2.
 
-| stratum | n | (a) Eq. 2 | (b) equilibrium count | (c) per-feature Cᵢ |
-|---|--:|--:|--:|--:|
-| overall | 600 | 0.52 | **0.97** | −0.53 |
-| below d* | 425 | 0.49 | 0.97 | −0.79 |
-| near d* | 115 | **−3.23** | **0.70** | −7.52 |
-| above d* | 60 | **−2.94** | **0.58** | −8.65 |
+| stratum | n | (a) Eq. 2 | (b) equilibrium, round() | (b) w/ floor() | (b′) measured kept set | (c) per-feature Cᵢ |
+|---|--:|--:|--:|--:|--:|--:|
+| overall | 600 | 0.52 (.026) | 0.97 (.006) | 0.93 (.007) | **0.97 (.005)** | −0.53 (.045) |
+| below d* | 385 | 0.57 (.025) | 0.97 (.006) | 0.92 (.007) | 0.97 (.005) | −0.65 (.048) |
+| near d* | 185 | **−3.76** (.028) | 0.67 (.008) | 0.72 (.007) | **0.80 (.006)** | −8.59 (.041) |
+| above d* | 30 | **−2.03** (.014) | 0.49 (.006) | 0.56 (.005) | **0.64 (.004)** | −10.24 (.025) |
 
-Eq. 2 (a) is adequate below d* (where 425/600 points sit — this is what
-carries the paper's >93% median-accuracy claim) and collapses near/above;
-the equilibrium count (b) restores a positive fit. The per-feature form (c)
+Per-config aggregated R² (12 units): Eq. 2 mean **−5.4** / median −1.2 (the
+pooled 0.52 is held up by cross-config variance); (b′) mean **0.91** /
+median 0.91. The **zero-fitted-parameter (b′)** — Eq. 2 charged on each
+run's own measured kept set — is the best predictor in every stratum, and
+the gap decomposition shows dropped importance carries 72–87% of the
+achieved floor with the measured per-dropped-feature cost at ≈0.9× the
+Eq. 2 charge. Together: **Eq. 2's charging is right; A2's kept count is
+what fails.** The rounding convention in (b) (floor vs round of d·ĝ) is
+worth ±0.03–0.07 R² near d* — both are reported. The per-feature form (c)
 *overshoots* — a partially represented feature plus an optimal bias recovers
 most of its variance, so fractional capacity does **not** map linearly to
 loss (a useful negative result). At d_S = d_T the geometric (superposition)
-share of the observed floor is **0.40–0.73** (mean ≈ 0.63), so the
+share of the observed floor is **0.61–0.96 (mean 0.75)** via the measured
+kept set (b′), 0.40–0.73 (mean 0.63) via the fitted law (b) — either way the
 "architectural baseline" B read at d_S = d_T is contaminated by
 superposition cost.
 
-**Packing law (capacity & slope probes).** The g(α) bound is nearly
-reachable with uniform importances (ĝ = 0.93·g^0.93) but Zipf equilibrates
-below it (ĝ = 1.03·g^0.53), with Σ Cᵢ/d ≈ 1.0 in both cases — capacity is
-*fully used*, just allocated to fewer, cleaner features. The exponent b is
-flat across survival thresholds τ ∈ [0.3, 0.7] but falls monotonically with
-importance steepness (0.93, 0.69, 0.53, 0.44, 0.34, 0.34 for
-s = 0, 0.5, 1, 1.5, 2, 3). At α=0.99, tripling the training budget at n=400
-does not raise the uniform packing fraction (16.40 → 15.63 features/dim,
-−3%), so the sub-g packing is a real equilibrium, not slow symmetry-breaking.
+**Packing law (capacity & slope probes).** With uniform importances the
+achieved packing scales near-proportionally to the bound
+(ĝ = 0.93·g^0.93, seed-bootstrap SE ±0.01/±0.01) — though with a prefactor
+below 1 and a measurable n-dependence (see Limitations) — while Zipf
+equilibrates well below it (ĝ = 1.03·g^0.53, SE ±0.03/±0.01), with
+Σ Cᵢ/d ≈ 1.0 in both cases: capacity is *fully used*, just allocated to
+fewer, cleaner features. The exponent b is flat across survival thresholds
+τ ∈ [0.3, 0.7] but falls monotonically with importance steepness
+(0.93, 0.69, 0.53, 0.44, 0.34, 0.34 for s = 0, 0.5, 1, 1.5, 2, 3). At
+α=0.99 the uniform packing fraction is convergence-stable: at fixed n=400,
+tripling the training budget moves survived/d by −2.9% (16.10 → 15.63
+features/dim) — a plateau, so the sub-g packing is a real equilibrium, not
+slow symmetry-breaking. The n=400 (3×) value sits −4.7% below the n=200
+baseline (16.40), an n-dependence of the prefactor listed in Limitations.
 
 **Exp A — distillation allocation audit.** Distilled and direct students
 violate A2's ordering by the same small margin (overlap@k ∈ [0.80, 0.97],
@@ -271,6 +292,17 @@ We build on three works; here is precisely what is theirs vs. ours.
 x̂ = ReLU(WᵀWx + b), the sparse-feature data distribution
 (xᵢ ~ U[0,1] w.p. 1−α), Zipf importances, and the qualitative
 feature-survival picture. Reused verbatim (`src/model.py`, `src/data.py`).
+Their *correlated and anticorrelated features* section already shows
+qualitatively that anticorrelated features prefer shared (antipodal)
+directions — Exp C quantifies that effect against the iid Eq. 2 floor in
+the distillation context.
+
+**Liu, Liu & Gore 2025 (arXiv:2505.10465)** (theirs). A scaling analysis of
+loss and interference regimes in this same toy model. Complementary to us:
+they characterize how loss scales with width/sparsity within the model
+family; we audit the *kept-count assumption* of the compressed-sensing
+capacity bound in the distillation-floor context, and test predictors of
+the absolute floor.
 
 **Scherlis et al. 2022, *Polysemanticity and Capacity in Neural Networks***
 (theirs). The fractional capacity Cᵢ = ‖Wᵢ‖⁴ / Σⱼ (Wᵢ·Wⱼ)², satisfying
@@ -312,22 +344,36 @@ distillation menu constraint (Exp A) and the placement-cost Pareto (Exp B).
 - **Equalization is partial.** `--equalize-active` equalizes per-feature
   gradient counts across α; pairwise co-activation still scales (1−α)² and
   is not equalized, so extreme-α comparisons carry that caveat.
+- **The packing-law prefactor is n-dependent.** At α=0.99 the uniform
+  fraction of the bound drifts from 0.76 (n=200) to 0.72 (n=400, 3×
+  training budget; −4.7%), and the historical n=40 probe sat higher still.
+  The exponents are stable; the prefactors should be read as
+  n≈200-specific. "Reachable" claims about the g(α) bound are therefore
+  qualified, not exact.
 - **One packing-law fit protocol.** A single documented protocol
-  (`src.theory.fit_packing_law`) produces every packing-law number.
+  (`src.theory.fit_packing_law`) produces every packing-law number, now
+  with seed-bootstrap standard errors on every prefactor and exponent.
+- **Width grid / point count.** Exp 0 trains widths 1..⌈d*⌉+1 per config
+  (per-config counts: n=20 → 8/6/4/2 widths for α = 0.80/0.90/0.95/0.99;
+  n=40 → 14/11/7/3; n=80 → 27/20/13/5; total 120 widths × 5 seeds =
+  **600 points**).
 
 ### A note on the unified packing-law fit
 
-Two earlier runs of the same protocol gave the Zipf exponent as 0.57
-(capacity-probe fit) and 0.53 (threshold-robustness fit) — within
-seed-to-seed noise. We standardized on **one** instrument and protocol: the
+Two earlier independent runs of the same protocol gave the Zipf exponent as
+0.57 (capacity-probe fit) and 0.53 (threshold-robustness fit). With the
+seed-bootstrap SE now quantified (±0.01), that gap is ≈2 SE — consistent
+with run-to-run variation but not trivially "noise"; we flag it rather than
+average it. We standardized on **one** instrument and protocol: the
 slope-law probe (`experiments/probe_slope_law.py`), which stores per-feature
-norms (enabling the threshold-robustness check), at n=200, d=10, 3 seeds,
-update-equalized to 1e6 active samples/feature, kept count by ‖Wᵢ‖² > 0.5,
-log-log least squares over α ∈ {0.80, 0.90, 0.95, 0.99}. All numbers and
-figures in the release are regenerated with this single fit, which gives the
-Zipf law ĝ(α) = 1.03·g(α)^0.53. The predictors read these coefficients
-directly from `probe_slope_law_n200_fit.json`, so the report and the README
-cannot drift apart.
+norms (enabling the threshold-robustness check and the bootstrap), at n=200,
+d=10, 3 seeds, update-equalized to 1e6 active samples/feature, kept count by
+‖Wᵢ‖² > 0.5, log-log least squares over α ∈ {0.80, 0.90, 0.95, 0.99}. All
+numbers and figures in the release are regenerated with this single fit,
+which gives the Zipf law ĝ(α) = 1.03·g(α)^0.53 (SE ±0.03/±0.01). The
+predictors read these coefficients directly from
+`probe_slope_law_n200_fit.json`, so the report and the README cannot drift
+apart.
 
 ---
 
