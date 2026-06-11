@@ -1,0 +1,7 @@
+# Exp A: allocation audit at the default config.
+n: 40
+alpha: 0.90
+d_T: 10
+seeds: 5
+steps: 10000
+seed: 0

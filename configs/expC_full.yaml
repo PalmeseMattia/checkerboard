@@ -1,0 +1,9 @@
+# Exp C: block-anticorrelated packing (group prob = group_size*(1-alpha)).
+n: 40
+alpha: 0.90
+d_T: 10
+seeds: 5
+steps: 10000
+seed: 0
+group_size: 4
+lambdas: [0.03, 0.3]

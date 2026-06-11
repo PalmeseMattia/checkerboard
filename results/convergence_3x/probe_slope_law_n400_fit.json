@@ -1,0 +1,90 @@
+{
+  "n": 400,
+  "width": 10,
+  "alphas": [
+    0.99
+  ],
+  "g": [
+    21.714724095162573
+  ],
+  "slopes": [
+    0
+  ],
+  "threshold_robustness": {
+    "norm": {
+      "0.3": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.4": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.5": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.6": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.7": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      }
+    },
+    "cap": {
+      "0.3": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.4": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.5": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.6": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      },
+      "0.7": {
+        "uniform": {
+          "a": NaN,
+          "b": NaN
+        }
+      }
+    }
+  },
+  "slope_fit": {
+    "0": {
+      "a": NaN,
+      "b": NaN
+    }
+  },
+  "survived_by_slope_tau0.5": {
+    "0": [
+      156.33333333333334
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+n: 16
+alpha: 0.85
+d_T: 4
+seeds: 2
+steps: 600
+seed: 0
+outdir: results/smoke

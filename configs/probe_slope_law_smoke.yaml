@@ -1,0 +1,9 @@
+n: 40
+width: 5
+alphas: [0.80, 0.90]
+slopes: [0, 1]
+seeds: 2
+steps: 400
+equalize_active: null
+seed: 0
+outdir: results/smoke

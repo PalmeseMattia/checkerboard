@@ -1,0 +1,8 @@
+# n=40 variant: ceiling non-binding at alpha=0.80 (d=10: n/d = 4 > g = 3.1).
+n: 40
+widths: [5, 10]
+alphas: [0.80, 0.90, 0.95, 0.99]
+seeds: 3
+steps: 10000
+equalize_active: 1.0e+6
+seed: 0

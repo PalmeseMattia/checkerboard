@@ -1,0 +1,57 @@
+cff-version: 1.2.0
+title: >-
+  Controlled Feature Placement in Distillation:
+  Auditing the Capacity Allocation of Superposition
+message: >-
+  If you use this software or its findings, please cite it
+  using the metadata below.
+type: software
+authors:
+  - given-names: Davide Mattia
+    family-names: Palmese
+    email: palmesedavidemattia@gmail.com
+abstract: >-
+  A small PyTorch testbed extending Elhage et al. (2022) toy models of
+  superposition and the capacity theory of Sarkar & Deka (2026). It audits
+  assumption A2 of their minimum-width theorem (students keep exactly the
+  top floor(d*g(alpha)) features by importance), shows the refined Eq. 2
+  floor underestimates loss near and above the critical width, and that an
+  equilibrium-corrected kept count restores a positive absolute-floor fit.
+keywords:
+  - superposition
+  - knowledge distillation
+  - mechanistic interpretability
+  - toy models
+  - capacity
+license: MIT
+date-released: "2026-06-11"
+references:
+  - type: article
+    title: >-
+      Geometric Limits of Knowledge Distillation: A Minimum-Width
+      Theorem via Superposition Theory
+    authors:
+      - family-names: Sarkar
+      - family-names: Deka
+    year: 2026
+    identifiers:
+      - type: other
+        value: "arXiv:2604.04037"
+  - type: article
+    title: Toy Models of Superposition
+    authors:
+      - family-names: Elhage
+        given-names: Nelson
+    year: 2022
+    identifiers:
+      - type: url
+        value: "https://transformer-circuits.pub/2022/toy_model/index.html"
+  - type: article
+    title: Polysemanticity and Capacity in Neural Networks
+    authors:
+      - family-names: Scherlis
+        given-names: Adam
+    year: 2022
+    identifiers:
+      - type: other
+        value: "arXiv:2210.01892"

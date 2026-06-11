@@ -1,0 +1,18 @@
+# Exp 0 full sweep: n x alpha grid; d_T defaults to ceil(d*)+1 per config.
+configs:
+  - [20, 0.80]
+  - [20, 0.90]
+  - [20, 0.95]
+  - [20, 0.99]
+  - [40, 0.80]
+  - [40, 0.90]
+  - [40, 0.95]
+  - [40, 0.99]
+  - [80, 0.80]
+  - [80, 0.90]
+  - [80, 0.95]
+  - [80, 0.99]
+d_T: null        # null = ceil(d*) + 1 per config
+seeds: 5
+steps: 10000
+seed: 0

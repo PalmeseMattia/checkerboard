@@ -1,0 +1,10 @@
+# alpha=0.99 uniform convergence check, 3x active-sample budget.
+n: 400
+width: 10
+alphas: [0.99]
+slopes: [0]
+seeds: 3
+steps: 10000
+equalize_active: 3.0e+6
+seed: 0
+outdir: results/convergence_3x

@@ -1,0 +1,83 @@
+{
+  "n": 200,
+  "alpha": 0.99,
+  "widths": [
+    10
+  ],
+  "n_seeds": 3,
+  "batch_size": 4096,
+  "steps": 24415,
+  "active_samples_per_feature": 1000038.4000000008,
+  "config": {
+    "n": 200,
+    "d_T": 10,
+    "alpha": 0.99,
+    "n_seeds": 5,
+    "steps": 24415,
+    "batch_size": 4096,
+    "lr": 0.003,
+    "eval_every": 2441,
+    "eval_batch": 65536,
+    "eval_chunk": 8192,
+    "seed": 0,
+    "eval_seed": 7777,
+    "device": "auto"
+  },
+  "runtime_s": 86.01237058639526,
+  "records": [
+    {
+      "d": 10,
+      "importance": "zipf",
+      "seed": 0,
+      "alpha": 0.99,
+      "n_survived": 53,
+      "capacity_sum": 9.83067512512207,
+      "eval_loss": 0.00600656121969223
+    },
+    {
+      "d": 10,
+      "importance": "zipf",
+      "seed": 1,
+      "alpha": 0.99,
+      "n_survived": 53,
+      "capacity_sum": 9.78062629699707,
+      "eval_loss": 0.0059945303946733475
+    },
+    {
+      "d": 10,
+      "importance": "zipf",
+      "seed": 2,
+      "alpha": 0.99,
+      "n_survived": 54,
+      "capacity_sum": 9.809480667114258,
+      "eval_loss": 0.005999244749546051
+    },
+    {
+      "d": 10,
+      "importance": "uniform",
+      "seed": 0,
+      "alpha": 0.99,
+      "n_survived": 167,
+      "capacity_sum": 9.999425888061523,
+      "eval_loss": 0.013460695743560791
+    },
+    {
+      "d": 10,
+      "importance": "uniform",
+      "seed": 1,
+      "alpha": 0.99,
+      "n_survived": 162,
+      "capacity_sum": 9.999215126037598,
+      "eval_loss": 0.014351815916597843
+    },
+    {
+      "d": 10,
+      "importance": "uniform",
+      "seed": 2,
+      "alpha": 0.99,
+      "n_survived": 163,
+      "capacity_sum": 9.999307632446289,
+      "eval_loss": 0.01418459415435791
+    }
+  ]
+}

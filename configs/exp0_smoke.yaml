@@ -1,0 +1,9 @@
+# Reduced Exp 0: two configs, fewer seeds/steps; < 1 min on CPU.
+configs:
+  - [16, 0.85]
+  - [16, 0.90]
+d_T: 5
+seeds: 2
+steps: 600
+seed: 0
+outdir: results/smoke

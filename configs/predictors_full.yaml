@@ -1,0 +1,2 @@
+# Floor-predictor analysis; reads exp0_*.json + probe_slope_law_n<fit_n>_fit.json.
+fit_n: 200

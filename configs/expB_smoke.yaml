@@ -1,0 +1,9 @@
+n: 16
+alpha: 0.85
+d_T: 4
+seeds: 2
+steps: 600
+seed: 0
+widths: [2, 3]
+betas: [1, 10, 100]
+outdir: results/smoke
